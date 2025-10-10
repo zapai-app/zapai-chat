@@ -5,12 +5,17 @@ import { useCurrentUser } from "./useCurrentUser";
 
 import type { NostrEvent } from "@nostrify/nostrify";
 
-export function useNostrPublish(): UseMutationResult<NostrEvent> {
+type NostrEventInput = Omit<NostrEvent, 'id' | 'pubkey' | 'sig' | 'created_at' | 'tags'> & {
+  created_at?: number;
+  tags?: string[][];
+};
+
+export function useNostrPublish(): UseMutationResult<NostrEvent, Error, NostrEventInput> {
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
 
   return useMutation({
-    mutationFn: async (t: Omit<NostrEvent, 'id' | 'pubkey' | 'sig'>) => {
+    mutationFn: async (t: NostrEventInput) => {
       if (user) {
         const tags = t.tags ?? [];
 
