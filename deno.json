@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@nostrify/nostrify": "jsr:@nostrify/nostrify@^0.46.5"
+  }
+}
