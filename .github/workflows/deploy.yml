@@ -38,6 +38,8 @@ jobs:
           cache: npm
 
       - name: Install dependencies and build
+        env:
+          VITE_TARGET_PUBKEY: ${{ secrets.VITE_TARGET_PUBKEY }}
         run: |
           npm install
           npm run build
