@@ -6,8 +6,8 @@ import { ChatWindow } from '@/components/chat/ChatWindow';
 
 const Index = () => {
   useSeoMeta({
-    title: 'ZapAI Chat - Nostr Messaging',
-    description: 'Chat with your favorite Nostr accounts using encrypted direct messages.',
+    title: 'ZapAI - AI Chat on Nostr',
+    description: 'Chat with AI on Nostr. Encrypted conversations with Lightning payments.',
   });
 
   // Get target pubkey from environment variable
