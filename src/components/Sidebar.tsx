@@ -63,7 +63,7 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
               <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex-shrink-0">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
-              <h1 className="text-lg font-bold text-white truncate">ZapAI Chat</h1>
+              <h1 className="text-lg font-bold text-white truncate">ZAI Chat</h1>
             </div>
             
             <Button

@@ -18,9 +18,11 @@ import { genUserName } from '@/lib/genUserName';
 interface ChatWindowProps {
   targetPubkey: string | null;
   onMenuClick?: () => void;
+  onToggleSidebar?: () => void;
+  isSidebarOpen?: boolean;
 }
 
-export function ChatWindow({ targetPubkey, onMenuClick }: ChatWindowProps) {
+export function ChatWindow({ targetPubkey, onToggleSidebar, isSidebarOpen }: ChatWindowProps) {
   const { user } = useCurrentUser();
   const { data: messages, isLoading } = useChatMessages(targetPubkey);
   const { mutate: sendMessage, isPending: isSending } = useSendMessage(targetPubkey);
@@ -145,18 +147,16 @@ export function ChatWindow({ targetPubkey, onMenuClick }: ChatWindowProps) {
       <div className="sticky top-0 z-10 border-b border-white/[0.08] bg-black/95 backdrop-blur-xl supports-[backdrop-filter]:bg-black/80">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between">
-            {/* Mobile Menu Button */}
-            {onMenuClick && (
-              <button
-                onClick={onMenuClick}
-                className="md:hidden p-2 -ml-2 hover:bg-white/[0.08] rounded-lg transition-colors"
-                aria-label="Open menu"
-              >
-                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-            )}
+            {/* Sidebar Toggle Button - Always visible */}
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 -ml-2 hover:bg-white/[0.08] rounded-lg transition-colors"
+              aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
             
             <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
               {author.isLoading ? (

@@ -49,7 +49,7 @@ export function Settings() {
             <CardTitle>About</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-gray-400">
-            <p>ZapAI Chat - AI-powered chat with Lightning Network integration</p>
+            <p>ZAI Chat - AI-powered chat with Lightning Network integration</p>
             <p>Built with Nostr protocol for decentralized communication</p>
           </CardContent>
         </Card>

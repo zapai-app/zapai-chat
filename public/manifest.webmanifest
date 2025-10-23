@@ -1,6 +1,6 @@
 {
-  "name": "ZapAI",
-  "short_name": "ZapAI",
+  "name": "ZAI",
+  "short_name": "ZAI",
   "description": "AI Chat on Nostr",
   "start_url": "/",
   "display": "standalone",

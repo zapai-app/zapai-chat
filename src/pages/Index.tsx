@@ -15,7 +15,7 @@ const Index = () => {
   }, []);
 
   useSeoMeta({
-    title: 'ZapAI - AI Chat on Nostr',
+    title: 'ZAI - AI Chat on Nostr',
     description: 'Chat with AI on Nostr. Encrypted conversations with Lightning payments.',
   });
 
@@ -57,7 +57,8 @@ const Index = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <ChatWindow 
           targetPubkey={targetPubkey}
-          onMenuClick={() => setSidebarOpen(true)}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          isSidebarOpen={sidebarOpen}
         />
       </div>
     </div>

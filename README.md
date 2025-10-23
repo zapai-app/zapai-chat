@@ -1,6 +1,6 @@
-# ZapAI Chat
+# ZAI Chat
 
-ZapAI is an AI bot that operates on the Nostr network. Unlike traditional AI services, ZapAI only responds when you send a Lightning payment (zap) in exchange for answers.
+ZAI is an AI bot that operates on the Nostr network. Unlike traditional AI services, ZAI only responds when you send a Lightning payment (zap) in exchange for answers.
 
 ## Quick Start
 
