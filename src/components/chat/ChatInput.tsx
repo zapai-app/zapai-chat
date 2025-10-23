@@ -90,9 +90,9 @@ export function ChatInput({ onSend, disabled, placeholder = 'Type a message...' 
         </div>
       )}
 
-      {/* Input Area */}
-      <div className="flex gap-2 items-end">
-        <div className="flex-1 relative bg-muted/50 rounded-2xl border border-input">
+      {/* Input Area - Premium black theme */}
+      <div className="flex gap-2 md:gap-3 items-end">
+        <div className="flex-1 relative bg-white/[0.03] rounded-3xl border border-white/[0.08] hover:border-white/[0.12] focus-within:border-primary/50 transition-all duration-200">
           <Textarea
             ref={textareaRef}
             value={message}
@@ -103,10 +103,11 @@ export function ChatInput({ onSend, disabled, placeholder = 'Type a message...' 
             rows={1}
             className={cn(
               'resize-none min-h-[52px] max-h-[200px] overflow-y-auto',
-              'border-0 bg-transparent px-4 py-4 pr-12 focus-visible:ring-0 focus-visible:ring-offset-0'
+              'border-0 bg-transparent px-5 py-3.5 pr-14 text-sm md:text-base text-white',
+              'focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-500'
             )}
           />
-          <div className="absolute right-2 bottom-2 flex gap-1">
+          <div className="absolute right-2 bottom-2.5 flex gap-1">
             <input
               ref={fileInputRef}
               type="file"
@@ -123,7 +124,7 @@ export function ChatInput({ onSend, disabled, placeholder = 'Type a message...' 
               variant="ghost"
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled}
-              className="h-8 w-8 rounded-lg"
+              className="h-8 w-8 rounded-lg hover:bg-white/[0.08] text-gray-400 hover:text-white transition-colors"
             >
               <Paperclip className="h-4 w-4" />
             </Button>
@@ -133,7 +134,7 @@ export function ChatInput({ onSend, disabled, placeholder = 'Type a message...' 
           type="submit"
           size="icon"
           disabled={disabled || (!message.trim() && selectedFiles.length === 0)}
-          className="h-[52px] w-[52px] rounded-xl flex-shrink-0"
+          className="h-[52px] w-[52px] rounded-2xl flex-shrink-0 bg-gradient-to-br from-primary via-primary/90 to-primary/80 hover:from-primary hover:via-primary hover:to-primary/90 disabled:opacity-50 transition-all duration-200"
         >
           <Send className="h-5 w-5" />
         </Button>

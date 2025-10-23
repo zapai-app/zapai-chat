@@ -1,10 +1,19 @@
 import { useSeoMeta } from '@unhead/react';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { nip19 } from 'nostr-tools';
 import { Sidebar } from '@/components/Sidebar';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 
 const Index = () => {
+  // Sidebar open by default on desktop, closed on mobile
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Set sidebar open by default on desktop
+  useEffect(() => {
+    const isDesktop = window.innerWidth >= 768;
+    setSidebarOpen(isDesktop);
+  }, []);
+
   useSeoMeta({
     title: 'ZapAI - AI Chat on Nostr',
     description: 'Chat with AI on Nostr. Encrypted conversations with Lightning payments.',
@@ -37,15 +46,19 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      {/* Sidebar - Hidden on mobile, visible on desktop */}
-      <div className="hidden md:block md:w-80 flex-shrink-0">
-        <Sidebar />
-      </div>
+    <div className="h-screen flex overflow-hidden bg-black">
+      {/* Sidebar - Responsive with drawer for mobile */}
+      <Sidebar 
+        isOpen={sidebarOpen} 
+        onToggle={() => setSidebarOpen(!sidebarOpen)} 
+      />
 
       {/* Main Chat Area */}
-      <div className="flex-1 overflow-hidden">
-        <ChatWindow targetPubkey={targetPubkey} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <ChatWindow 
+          targetPubkey={targetPubkey}
+          onMenuClick={() => setSidebarOpen(true)}
+        />
       </div>
     </div>
   );

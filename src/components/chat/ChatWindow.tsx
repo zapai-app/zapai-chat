@@ -17,9 +17,10 @@ import { genUserName } from '@/lib/genUserName';
 
 interface ChatWindowProps {
   targetPubkey: string | null;
+  onMenuClick?: () => void;
 }
 
-export function ChatWindow({ targetPubkey }: ChatWindowProps) {
+export function ChatWindow({ targetPubkey, onMenuClick }: ChatWindowProps) {
   const { user } = useCurrentUser();
   const { data: messages, isLoading } = useChatMessages(targetPubkey);
   const { mutate: sendMessage, isPending: isSending } = useSendMessage(targetPubkey);
@@ -139,137 +140,161 @@ export function ChatWindow({ targetPubkey }: ChatWindowProps) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Chat Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {author.isLoading ? (
-              <>
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-48" />
-                </div>
-              </>
-            ) : (
-              <>
-                <Avatar className="h-10 w-10 flex-shrink-0">
-                  {avatarUrl && (
-                    <AvatarImage 
-                      src={avatarUrl} 
-                      alt={displayName}
-                      className="object-cover"
-                    />
-                  )}
-                  <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-                    {displayName.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-base truncate">{displayName}</h2>
-                  {about && (
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                      {about}
-                    </p>
-                  )}
-                </div>
-              </>
+    <div className="flex flex-col h-full bg-black">
+      {/* Chat Header - Ultra-modern design */}
+      <div className="sticky top-0 z-10 border-b border-white/[0.08] bg-black/95 backdrop-blur-xl supports-[backdrop-filter]:bg-black/80">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-3 md:py-4">
+          <div className="flex items-center justify-between">
+            {/* Mobile Menu Button */}
+            {onMenuClick && (
+              <button
+                onClick={onMenuClick}
+                className="md:hidden p-2 -ml-2 hover:bg-white/[0.08] rounded-lg transition-colors"
+                aria-label="Open menu"
+              >
+                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
             )}
-          </div>
-          
-          {/* Right side: Login (mobile) and Zap button */}
-          <div className="flex items-center gap-2">
-            {/* Login Area - Mobile only */}
-            <div className="md:hidden">
-              <LoginArea className="w-auto" />
+            
+            <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+              {author.isLoading ? (
+                <>
+                  <Skeleton className="h-8 w-8 md:h-10 md:w-10 rounded-full flex-shrink-0" />
+                  <div className="space-y-1.5 min-w-0">
+                    <Skeleton className="h-3.5 w-24 md:w-32" />
+                    <Skeleton className="h-2.5 w-32 md:w-48" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Avatar className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0 ring-2 ring-primary/20">
+                    {avatarUrl && (
+                      <AvatarImage 
+                        src={avatarUrl} 
+                        alt={displayName}
+                        className="object-cover"
+                      />
+                    )}
+                    <AvatarFallback className="bg-gradient-to-br from-primary via-primary/80 to-primary/60 text-white font-bold text-xs md:text-sm">
+                      {displayName.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-semibold text-sm md:text-base truncate text-white">{displayName}</h2>
+                    {about && (
+                      <p className="text-[10px] md:text-xs text-gray-400 line-clamp-1">
+                        {about}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
             
-            {/* Zap Button */}
-            <ZapButton
-              target={{ 
-                id: '', 
-                pubkey: targetPubkey, 
-                created_at: 0, 
-                kind: 0, 
-                tags: [], 
-                content: '', 
-                sig: '' 
-              }}
-              className="gap-2"
-              showCount={false}
-            />
+            {/* Right side: Login (mobile) and Zap button */}
+            <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+              {/* Login Area - Mobile only */}
+              <div className="md:hidden">
+                <LoginArea className="w-auto" />
+              </div>
+              
+              {/* Zap Button */}
+              <ZapButton
+                target={{ 
+                  id: '', 
+                  pubkey: targetPubkey, 
+                  created_at: 0, 
+                  kind: 0, 
+                  tags: [], 
+                  content: '', 
+                  sig: '' 
+                }}
+                className="gap-1.5 md:gap-2"
+                showCount={false}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 px-6">
-        <div ref={scrollRef} className="py-4">
-          {isLoading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex gap-3 mb-4">
-                  <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
-                  <div className="flex flex-col gap-1">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-16 w-64" />
+      {/* Messages Area - ChatGPT style center-aligned */}
+      <ScrollArea className="flex-1">
+        <div className="max-w-4xl mx-auto px-4 md:px-6">
+          <div ref={scrollRef} className="py-4 md:py-6">
+            {isLoading ? (
+              <div className="space-y-6 py-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex gap-3">
+                    <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
+                    <div className="flex flex-col gap-2 flex-1">
+                      <Skeleton className="h-3.5 w-24" />
+                      <Skeleton className="h-20 w-full max-w-2xl" />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : messages && messages.length > 0 ? (
-            messages.map((event) => (
-              <ChatMessage key={event.id} event={event} />
-            ))
-          ) : (
-            <div className="flex items-center justify-center h-full min-h-[400px]">
-              <Card className="p-8 max-w-md text-center border-dashed">
-                <div className="mb-4">
-                  <div className="mx-auto w-20 h-20 mb-4 flex items-center justify-center">
-                    {author.isLoading ? (
-                      <Skeleton className="h-16 w-16 rounded-full" />
-                    ) : (
-                      <Avatar className="h-16 w-16">
-                        {avatarUrl && (
-                          <AvatarImage 
-                            src={avatarUrl} 
-                            alt={displayName}
-                            className="object-cover"
-                          />
-                        )}
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xl">
-                          {displayName.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                ))}
+              </div>
+            ) : messages && messages.length > 0 ? (
+              <div className="space-y-4 md:space-y-6">
+                {messages.map((event) => (
+                  <ChatMessage key={event.id} event={event} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center max-w-2xl px-4">
+                  <div className="mb-8">
+                    <div className="mx-auto w-20 h-20 md:w-24 md:h-24 mb-6 flex items-center justify-center">
+                      {author.isLoading ? (
+                        <Skeleton className="h-20 w-20 md:h-24 md:w-24 rounded-full" />
+                      ) : (
+                        <Avatar className="h-20 w-20 md:h-24 md:w-24 ring-4 ring-primary/20">
+                          {avatarUrl && (
+                            <AvatarImage 
+                              src={avatarUrl} 
+                              alt={displayName}
+                              className="object-cover"
+                            />
+                          )}
+                          <AvatarFallback className="bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-white font-bold text-2xl md:text-3xl">
+                            {displayName.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-bold mb-3 text-white">
+                      Chat with {displayName}
+                    </h3>
+                    {about && (
+                      <p className="text-sm md:text-base text-gray-400 mb-4 max-w-lg mx-auto">
+                        {about}
+                      </p>
                     )}
+                    <div className="flex items-center justify-center gap-2 text-xs md:text-sm text-gray-500">
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <span>End-to-end encrypted</span>
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">
-                    Start a conversation with {displayName}
-                  </h3>
-                  {about && (
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {about}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    Send your first message to begin chatting. All messages are encrypted and private.
-                  </p>
                 </div>
-              </Card>
-            </div>
-          )}
-          <div ref={bottomRef} />
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
         </div>
       </ScrollArea>
 
-      {/* Input Area */}
-      <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-4">
-        <ChatInput
-          onSend={handleSend}
-          disabled={isSending}
-          placeholder={`Ask anything ...`}
-        />
+      {/* Input Area - Sleek floating style */}
+      <div className="sticky bottom-0 border-t border-white/[0.08] bg-black/95 backdrop-blur-xl supports-[backdrop-filter]:bg-black/80">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-3 md:py-4">
+          <ChatInput
+            onSend={handleSend}
+            disabled={isSending}
+            placeholder="Ask anything..."
+          />
+        </div>
       </div>
     </div>
   );
