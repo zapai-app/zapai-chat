@@ -22,6 +22,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useUpdateChatSession } from '@/hooks/useUpdateChatSession';
 import { useDeleteChatSession } from '@/hooks/useDeleteChatSession';
+import { useBalance } from '@/hooks/useBalance';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -51,12 +52,13 @@ export function Sidebar({
   const { data: sessions, isLoading: sessionsLoading } = useChatSessions();
   const { mutate: updateSession } = useUpdateChatSession();
   const { mutate: deleteSession } = useDeleteChatSession();
+  const { data: balanceData } = useBalance();
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   
-  // Mock balance - TODO: fetch from API in production
-  const balance = 0;
+  // Get balance from real-time subscription
+  const balance = balanceData?.totalSats ?? 0;
 
   // Convert chat sessions to conversations format
   const conversations: Conversation[] = (sessions || []).map(session => ({

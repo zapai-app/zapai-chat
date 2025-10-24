@@ -284,9 +284,9 @@ export function Wallet() {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Total Zaps</p>
-                  <p className="text-2xl font-bold">
+                  <div className="text-2xl font-bold">
                     {isLoadingZaps ? <Skeleton className="h-8 w-16" /> : totals.zapCount}
-                  </p>
+                  </div>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                   <Zap className="h-6 w-6 text-primary" />
@@ -300,9 +300,9 @@ export function Wallet() {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Total Received</p>
-                  <p className="text-2xl font-bold">
+                  <div className="text-2xl font-bold">
                     {isLoadingZaps ? <Skeleton className="h-8 w-24" /> : `${totals.totalSats.toLocaleString()}`}
-                  </p>
+                  </div>
                   <p className="text-xs text-muted-foreground">sats</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -317,9 +317,9 @@ export function Wallet() {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Unique Senders</p>
-                  <p className="text-2xl font-bold">
+                  <div className="text-2xl font-bold">
                     {isLoadingZaps ? <Skeleton className="h-8 w-16" /> : totals.uniqueSenders}
-                  </p>
+                  </div>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                   <Users className="h-6 w-6 text-primary" />
