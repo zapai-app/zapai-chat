@@ -1,43 +1,88 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const BOT_PUBKEY = '618be242c2e25d3e1b86e5ecabf32929a7c24d6cd2a797e8292a1f6252cb702e';
 
-interface Transaction {
-  zapId: string;
-  amount: number;
+interface BalanceResponse {
+  balance: number;
+  currency: string;
   timestamp: number;
-  date: string;
-  eventId: string;
 }
 
 interface BalanceData {
-  pubkey: string;
-  totalSats: number;
-  totalBTC: string;
-  zapCount: number;
-  transactions: Transaction[];
+  balance: number;
+  lastUpdate: number;
+  isLoading: boolean;
 }
 
 /**
- * Hook to fetch user's balance from the bot
- * Sends a kind 1006 event and waits for the bot's encrypted DM response
+ * Hook to subscribe to real-time balance updates from the bot
+ * Listens for kind 1006 events and sends balance request on mount
  */
 export function useBalance() {
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
+  const [balanceData, setBalanceData] = useState<BalanceData>({
+    balance: 0,
+    lastUpdate: 0,
+    isLoading: true,
+  });
 
-  return useQuery<BalanceData | null, Error>({
-    queryKey: ['balance', user?.pubkey],
-    enabled: !!user,
-    staleTime: 30000, // 30 seconds
-    refetchInterval: 60000, // Refetch every minute
-    queryFn: async () => {
-      if (!user) return null;
+  useEffect(() => {
+    if (!user) {
+      setBalanceData({ balance: 0, lastUpdate: 0, isLoading: false });
+      return;
+    }
 
+    let mounted = true;
+    let intervalId: NodeJS.Timeout;
+
+    const fetchBalance = async () => {
       try {
-        // Step 1: Request balance by publishing kind 1006 event
+        console.log('📡 Querying balance updates...');
+        
+        // Query for latest balance event from bot
+        const events = await nostr.query(
+          [
+            {
+              kinds: [1006],
+              authors: [BOT_PUBKEY],
+              '#p': [user.pubkey],
+              limit: 1,
+            },
+          ],
+          { signal: AbortSignal.timeout(5000) }
+        );
+
+        if (events.length > 0 && mounted) {
+          const event = events[0];
+          try {
+            console.log('📨 Balance event received:', event);
+
+            // Parse balance from content
+            const data = JSON.parse(event.content) as BalanceResponse;
+            
+            console.log('💰 Balance data:', data);
+
+            setBalanceData({
+              balance: data.balance,
+              lastUpdate: data.timestamp,
+              isLoading: false,
+            });
+          } catch (error) {
+            console.error('Failed to parse balance event:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to query balance:', error);
+      }
+    };
+
+    const requestBalance = async () => {
+      try {
+        console.log('📤 Requesting current balance...');
+        
         const balanceRequest = await user.signer.signEvent({
           kind: 1006,
           content: '',
@@ -45,102 +90,67 @@ export function useBalance() {
           created_at: Math.floor(Date.now() / 1000),
         });
 
-        // Publish the balance request
         await nostr.event(balanceRequest, { signal: AbortSignal.timeout(5000) });
         
-        console.log('Balance request sent:', {
+        console.log('✅ Balance request sent');
+      } catch (error) {
+        console.error('Failed to send balance request:', error);
+      }
+    };
+
+    // Initial request and fetch
+    const initialize = async () => {
+      await requestBalance();
+      // Wait a bit for bot to respond
+      setTimeout(() => {
+        fetchBalance();
+      }, 2000);
+      
+      // Set up polling every 10 seconds for real-time updates
+      intervalId = setInterval(fetchBalance, 10000);
+      
+      // After 5 seconds, if still no response, set loading to false
+      setTimeout(() => {
+        if (mounted) {
+          setBalanceData((prev) => ({ ...prev, isLoading: false }));
+        }
+      }, 5000);
+    };
+
+    initialize();
+
+    return () => {
+      mounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [user, nostr]);
+
+  return {
+    data: balanceData.balance > 0 ? {
+      totalSats: balanceData.balance,
+      lastUpdate: balanceData.lastUpdate,
+    } : null,
+    isLoading: balanceData.isLoading,
+    refetch: async () => {
+      if (!user) return;
+      
+      console.log('🔄 Refetching balance...');
+      setBalanceData((prev) => ({ ...prev, isLoading: true }));
+
+      try {
+        const balanceRequest = await user.signer.signEvent({
           kind: 1006,
-          userPubkey: user.pubkey,
-          botPubkey: BOT_PUBKEY,
+          content: '',
+          tags: [['balance']],
+          created_at: Math.floor(Date.now() / 1000),
         });
 
-        // Step 2: Wait for bot's response (kind 4 DM)
-        // Query for recent DMs from the bot to current user
-        const startTime = Math.floor(Date.now() / 1000) - 300; // Look for messages in last 5 minutes
-        
-        // Poll for the response with retries
-        let attempts = 0;
-        const maxAttempts = 8;
-        const pollInterval = 2000; // 2 seconds between attempts
-
-        while (attempts < maxAttempts) {
-          const dms = await nostr.query(
-            [{
-              kinds: [4],
-              authors: [BOT_PUBKEY],
-              '#p': [user.pubkey],
-              since: startTime,
-            }],
-            { signal: AbortSignal.timeout(3000) }
-          );
-
-          console.log(`Balance query attempt ${attempts + 1}/${maxAttempts}: Found ${dms.length} DMs from bot`);
-
-          if (dms.length > 0) {
-            // Sort by created_at to get the most recent
-            const sortedDMs = dms.sort((a, b) => b.created_at - a.created_at);
-            
-            // Try to decrypt and parse each DM until we find a valid balance response
-            for (const dm of sortedDMs) {
-              try {
-                if (!user.signer.nip04) {
-                  throw new Error('NIP-04 encryption not supported');
-                }
-                
-                const decrypted = await user.signer.nip04.decrypt(BOT_PUBKEY, dm.content);
-                console.log('Decrypted DM content:', decrypted);
-                
-                const balanceData = JSON.parse(decrypted) as BalanceData;
-                
-                // Validate the response has the expected structure
-                if (
-                  balanceData.pubkey &&
-                  typeof balanceData.totalSats === 'number' &&
-                  Array.isArray(balanceData.transactions)
-                ) {
-                  console.log('Valid balance data received:', balanceData);
-                  return balanceData;
-                }
-              } catch (error) {
-                // This DM might not be a balance response, continue to next
-                console.warn('Failed to decrypt or parse DM:', error);
-                continue;
-              }
-            }
-          }
-
-          // Wait before next attempt
-          attempts++;
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, pollInterval));
-          }
-        }
-
-        // No response received after all attempts
-        console.warn('No balance response received from bot after all attempts');
-        console.log('User pubkey:', user.pubkey);
-        console.log('Bot pubkey:', BOT_PUBKEY);
-        
-        // Return default empty balance
-        return {
-          pubkey: user.pubkey,
-          totalSats: 0,
-          totalBTC: '0.00000000',
-          zapCount: 0,
-          transactions: [],
-        };
+        await nostr.event(balanceRequest, { signal: AbortSignal.timeout(5000) });
+        console.log('✅ Balance refetch request sent');
       } catch (error) {
-        console.error('Failed to fetch balance:', error);
-        
-        // Return default empty balance on error
-        return {
-          pubkey: user.pubkey,
-          totalSats: 0,
-          totalBTC: '0.00000000',
-          zapCount: 0,
-          transactions: [],
-        };
+        console.error('Failed to refetch balance:', error);
+        setBalanceData((prev) => ({ ...prev, isLoading: false }));
       }
     },
-  });
+  };
 }

@@ -45,7 +45,7 @@ export function Wallet() {
     return null;
   }, []);
 
-  // Fetch user's balance from bot
+  // Fetch user's balance from bot (real-time subscription)
   const { data: balanceData, isLoading: isLoadingBalance, refetch: refetchBalance } = useBalance();
   const balance = balanceData?.totalSats ?? 0;
 
