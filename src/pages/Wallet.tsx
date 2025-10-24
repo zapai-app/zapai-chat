@@ -1,14 +1,18 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Zap } from 'lucide-react';
+import { ArrowLeft, Zap, RefreshCw, Users, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { ZapButton } from '@/components/ZapButton';
+import { ZapItem } from '@/components/ZapItem';
 import { useAuthor } from '@/hooks/useAuthor';
+import { useBalance } from '@/hooks/useBalance';
+import { useReceivedZaps } from '@/hooks/useReceivedZaps';
 import { genUserName } from '@/lib/genUserName';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { nip19 } from 'nostr-tools';
 
 export function Wallet() {
@@ -40,6 +44,13 @@ export function Wallet() {
 
     return null;
   }, []);
+
+  // Fetch user's balance from bot
+  const { data: balanceData, isLoading: isLoadingBalance, refetch: refetchBalance } = useBalance();
+  const balance = balanceData?.totalSats ?? 0;
+
+  // Fetch all zap receipts sent to the bot
+  const { zaps, totals, isLoading: isLoadingZaps, refetch: refetchZaps } = useReceivedZaps(botPubkey);
 
   // Fetch bot's profile
   const botAuthor = useAuthor(botPubkey || undefined);
@@ -106,9 +117,6 @@ export function Wallet() {
     );
   }
 
-  // Mock balance - will be fetched from server later
-  const balance = 0;
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
@@ -126,32 +134,50 @@ export function Wallet() {
             <h1 className="text-3xl font-bold">Wallet</h1>
             <p className="text-sm text-muted-foreground mt-1">Manage your account balance</p>
           </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => refetchBalance()}
+            disabled={isLoadingBalance}
+            className="h-10 w-10"
+            title="Refresh balance"
+          >
+            <RefreshCw className={`h-5 w-5 ${isLoadingBalance ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
         {/* Balance Card */}
         <Card className="overflow-hidden border-2">
           <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background p-8">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                  Current Balance
-                </p>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-5xl font-bold tracking-tight">
-                    {balance.toLocaleString()}
-                  </span>
-                  <span className="text-2xl font-semibold text-muted-foreground">
-                    sats
-                  </span>
+            {isLoadingBalance ? (
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-12 w-48" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                    Current Balance
+                  </p>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-5xl font-bold tracking-tight">
+                      {balance.toLocaleString()}
+                    </span>
+                    <span className="text-2xl font-semibold text-muted-foreground">
+                      sats
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    ≈ ${(balance * 0.0001).toFixed(2)} USD
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  ≈ ${(balance * 0.0001).toFixed(2)} USD
-                </p>
+                <div className="hidden sm:flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
+                  <Zap className="h-12 w-12 text-primary" />
+                </div>
               </div>
-              <div className="hidden sm:flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
-                <Zap className="h-12 w-12 text-primary" />
-              </div>
-            </div>
+            )}
           </div>
         </Card>
 
@@ -259,6 +285,114 @@ export function Wallet() {
                     </CardContent>
                   </Card>
                 </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Statistics Cards */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Total Zaps</p>
+                  <p className="text-2xl font-bold">
+                    {isLoadingZaps ? <Skeleton className="h-8 w-16" /> : totals.zapCount}
+                  </p>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <Zap className="h-6 w-6 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Total Received</p>
+                  <p className="text-2xl font-bold">
+                    {isLoadingZaps ? <Skeleton className="h-8 w-24" /> : `${totals.totalSats.toLocaleString()}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">sats</p>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Unique Senders</p>
+                  <p className="text-2xl font-bold">
+                    {isLoadingZaps ? <Skeleton className="h-8 w-16" /> : totals.uniqueSenders}
+                  </p>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* All Received Zaps */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <Zap className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>All Received Zaps</CardTitle>
+                  <CardDescription>Everyone who charged your account</CardDescription>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  refetchBalance();
+                  refetchZaps();
+                }}
+                disabled={isLoadingZaps}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoadingZaps ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoadingZaps ? (
+              <div className="space-y-3">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ) : zaps.length > 0 ? (
+              <div className="space-y-3">
+                {zaps.map((zap) => (
+                  <ZapItem key={zap.id} zap={zap} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="flex justify-center mb-4">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                    <Zap className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  No zaps received yet. Send a zap to the bot to charge your account.
+                </p>
               </div>
             )}
           </CardContent>
