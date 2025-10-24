@@ -57,20 +57,6 @@ export function Wallet() {
   const botMetadata = botAuthor.data?.metadata;
   const botDisplayName = botMetadata?.name || botMetadata?.display_name || genUserName(botPubkey || '');
 
-  // Create a minimal event object for the bot (required by ZapButton)
-  const botEvent = useMemo(() => {
-    if (!botPubkey) return null;
-    return {
-      id: '',
-      pubkey: botPubkey,
-      created_at: Math.floor(Date.now() / 1000),
-      kind: 0,
-      tags: [],
-      content: '',
-      sig: '',
-    };
-  }, [botPubkey]);
-
 
   if (!user) {
     return (
@@ -216,7 +202,7 @@ export function Wallet() {
             </div>
 
             {/* Zap Button */}
-            {botEvent && (
+            {botPubkey && (
               <div className="space-y-4">
                 <div className="rounded-lg border-2 border-dashed border-primary/20 bg-primary/5 p-6">
                   <div className="flex flex-col items-center text-center space-y-4">
@@ -230,7 +216,8 @@ export function Wallet() {
                       </p>
                     </div>
                     <ZapButton 
-                      target={botEvent}
+                      target={null}
+                      targetPubkey={botPubkey}
                       className="w-full max-w-sm h-12 text-base font-semibold"
                       showCount={false}
                     />
@@ -351,8 +338,8 @@ export function Wallet() {
                   <Zap className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <CardTitle>All Received Zaps</CardTitle>
-                  <CardDescription>Everyone who charged your account</CardDescription>
+                  <CardTitle>Payment History</CardTitle>
+                  <CardDescription>All Lightning payments you sent to charge your account</CardDescription>
                 </div>
               </div>
               <Button

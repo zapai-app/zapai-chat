@@ -57,9 +57,9 @@ export function ZapItem({ zap }: ZapItemProps) {
             {/* Header */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-base truncate">{senderName}</h4>
+                <h4 className="font-semibold text-base">{senderName}</h4>
                 <p className="text-xs text-muted-foreground" title={fullDate}>
-                  {timeAgo}
+                  Charged account • {timeAgo}
                 </p>
               </div>
               
@@ -90,15 +90,18 @@ export function ZapItem({ zap }: ZapItemProps) {
               <summary className="text-muted-foreground cursor-pointer hover:text-foreground">
                 Transaction details
               </summary>
-              <div className="mt-2 space-y-1 font-mono text-muted-foreground bg-muted/30 p-2 rounded">
-                <div>
-                  <span className="font-semibold">ID:</span> {zap.id.slice(0, 16)}...
+              <div className="mt-2 space-y-2 text-[10px] text-muted-foreground bg-muted/30 p-3 rounded">
+                <div className="space-y-1">
+                  <div className="font-semibold text-foreground">Event ID:</div>
+                  <div className="font-mono break-all bg-background/50 p-2 rounded">{zap.id}</div>
                 </div>
-                <div>
-                  <span className="font-semibold">From:</span> {zap.senderPubkey.slice(0, 16)}...
+                <div className="space-y-1">
+                  <div className="font-semibold text-foreground">Sender Pubkey:</div>
+                  <div className="font-mono break-all bg-background/50 p-2 rounded">{zap.senderPubkey}</div>
                 </div>
-                <div className="break-all">
-                  <span className="font-semibold">Invoice:</span> {zap.bolt11.slice(0, 32)}...
+                <div className="space-y-1">
+                  <div className="font-semibold text-foreground">Lightning Invoice:</div>
+                  <div className="font-mono break-all bg-background/50 p-2 rounded text-[9px]">{zap.bolt11}</div>
                 </div>
               </div>
             </details>

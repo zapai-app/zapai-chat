@@ -13,10 +13,11 @@ import { useNostr } from '@nostrify/react';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 export function useZaps(
-  target: Event | Event[],
+  target: Event | Event[] | null,
   webln: WebLNProvider | null,
   _nwcConnection: NWCConnection | null,
-  onZapSuccess?: () => void
+  onZapSuccess?: () => void,
+  targetPubkey?: string  // Optional: For zapping directly to a profile without an event
 ) {
   const { nostr } = useNostr();
   const { toast } = useToast();
@@ -27,7 +28,10 @@ export function useZaps(
   // Handle the case where an empty array is passed (from ZapButton when external data is provided)
   const actualTarget = Array.isArray(target) ? (target.length > 0 ? target[0] : null) : target;
 
-  const author = useAuthor(actualTarget?.pubkey);
+  // Use targetPubkey if provided, otherwise use actualTarget's pubkey
+  const recipientPubkey = targetPubkey || actualTarget?.pubkey;
+  
+  const author = useAuthor(recipientPubkey);
   const { sendPayment, getActiveConnection } = useNWC();
   const [isZapping, setIsZapping] = useState(false);
   const [invoice, setInvoice] = useState<string | null>(null);
@@ -148,10 +152,11 @@ export function useZaps(
       return;
     }
 
-    if (!actualTarget) {
+    // Allow zapping without a target event (direct to profile)
+    if (!actualTarget && !targetPubkey) {
       toast({
-        title: 'Event not found',
-        description: 'Could not find the event to zap.',
+        title: 'Target not found',
+        description: 'Could not find the target to zap.',
         variant: 'destructive',
       });
       setIsZapping(false);
@@ -192,17 +197,32 @@ export function useZaps(
         return;
       }
 
-      // Create zap request - use appropriate event format based on kind
-      // For addressable events (30000-39999), pass the object to get 'a' tag
-      // For all other events, pass the ID string to get 'e' tag
+      // Create zap request
+      // If actualTarget exists, zap the event; otherwise, zap the profile directly
       const zapAmount = amount * 1000; // convert to millisats
 
-      const zapRequest = nip57.makeZapRequest({
-        event: actualTarget as Event,
-        amount: zapAmount,
-        relays: [config.relayUrl],
-        comment
-      });
+      let zapRequest;
+      if (actualTarget) {
+        // Zap to specific event
+        zapRequest = nip57.makeZapRequest({
+          event: actualTarget as Event,
+          amount: zapAmount,
+          relays: [config.relayUrl],
+          comment
+        });
+      } else {
+        // Zap directly to profile (no event tag)
+        zapRequest = {
+          kind: 9734,
+          content: comment,
+          tags: [
+            ['p', recipientPubkey!],
+            ['amount', zapAmount.toString()],
+            ['relays', ...config.relayUrl ? [config.relayUrl] : []],
+          ],
+          created_at: Math.floor(Date.now() / 1000),
+        };
+      }
 
       // Sign the zap request (but don't publish to relays - only send to LNURL endpoint)
       if (!user.signer) {

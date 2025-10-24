@@ -4,6 +4,32 @@
 
 This document explains how the ZAI bot should process Lightning zaps to automatically charge user accounts. The system uses Nostr's NIP-57 (Lightning Zaps) protocol.
 
+## ⚠️ Important: Understanding Sender vs Receiver
+
+**Critical Concept:**
+
+When a user sends a zap to the bot:
+- **The USER is the SENDER** (the one paying)
+- **The BOT is the RECEIVER** (the one getting paid)
+- The sender's pubkey is in the **Zap Request (kind 9734)**, NOT in the Zap Receipt (kind 9735)
+
+**Example Flow:**
+```
+Alice (pubkey: alice123...) wants to charge her account
+↓
+Alice sends 1000 sats zap to Bot (pubkey: bot456...)
+↓
+Zap Receipt is published (kind 9735)
+  - receipt.pubkey = bot456... or relay pubkey (NOT the sender!)
+  - receipt.tags['description'] = Zap Request JSON
+    - zapRequest.pubkey = alice123... ← THIS is who sent the zap!
+    - zapRequest.tags['amount'] = 1000000 (millisats)
+↓
+Bot extracts alice123... from description tag
+↓
+Bot credits Alice's account with 1000 sats
+```
+
 ## How Zap Processing Works
 
 ### 1. Understanding Zap Flow

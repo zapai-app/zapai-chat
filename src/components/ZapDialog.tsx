@@ -36,7 +36,8 @@ import QRCode from 'qrcode';
 import type { WebLNProvider } from "@webbtc/webln-types";
 
 interface ZapDialogProps {
-  target: Event;
+  target: Event | null;
+  targetPubkey?: string;  // For direct profile zaps without an event
   children?: React.ReactNode;
   className?: string;
 }
@@ -235,13 +236,17 @@ const ZapContent = forwardRef<HTMLDivElement, ZapContentProps>(({
 ));
 ZapContent.displayName = 'ZapContent';
 
-export function ZapDialog({ target, children, className }: ZapDialogProps) {
+export function ZapDialog({ target, targetPubkey, children, className }: ZapDialogProps) {
   const [open, setOpen] = useState(false);
   const { user } = useCurrentUser();
-  const { data: author } = useAuthor(target.pubkey);
+  
+  // Use targetPubkey if provided, otherwise use target's pubkey
+  const recipientPubkey = targetPubkey || target?.pubkey;
+  const { data: author } = useAuthor(recipientPubkey);
+  
   const { toast } = useToast();
   const { webln, activeNWC } = useWallet();
-  const { zap, isZapping, invoice, setInvoice } = useZaps(target, webln, activeNWC, () => setOpen(false));
+  const { zap, isZapping, invoice, setInvoice } = useZaps(target, webln, activeNWC, () => setOpen(false), recipientPubkey);
   const [amount, setAmount] = useState<number | string>(100);
   const [comment, setComment] = useState<string>('');
   const [copied, setCopied] = useState(false);
@@ -250,10 +255,10 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (target) {
+    if (target || targetPubkey) {
       setComment('Zapped with ZAI!');
     }
-  }, [target]);
+  }, [target, targetPubkey]);
 
   // Generate QR code
   useEffect(() => {
@@ -348,7 +353,8 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
     zap,
   };
 
-  if (!user || user.pubkey === target.pubkey || !author?.metadata?.lud06 && !author?.metadata?.lud16) {
+  // Don't show if user is not logged in, is the author, or author has no lightning address
+  if (!user || (target && user.pubkey === target.pubkey) || (!author?.metadata?.lud06 && !author?.metadata?.lud16)) {
     return null;
   }
 
