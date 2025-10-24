@@ -142,18 +142,18 @@ export function ChatWindow({ targetPubkey, onToggleSidebar, isSidebarOpen }: Cha
   }
 
   return (
-    <div className="flex flex-col h-full bg-black">
+    <div className="flex flex-col h-full bg-background">
       {/* Chat Header - Ultra-modern design */}
-      <div className="sticky top-0 z-10 border-b border-white/[0.08] bg-black/95 backdrop-blur-xl supports-[backdrop-filter]:bg-black/80">
+      <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between">
             {/* Sidebar Toggle Button - Always visible */}
             <button
               onClick={onToggleSidebar}
-              className="p-2 -ml-2 hover:bg-white/[0.08] rounded-lg transition-colors"
+              className="p-2 -ml-2 hover:bg-accent rounded-lg transition-colors"
               aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
             >
-              <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-6 w-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
@@ -177,14 +177,14 @@ export function ChatWindow({ targetPubkey, onToggleSidebar, isSidebarOpen }: Cha
                         className="object-cover"
                       />
                     )}
-                    <AvatarFallback className="bg-gradient-to-br from-primary via-primary/80 to-primary/60 text-white font-bold text-xs md:text-sm">
+                    <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs md:text-sm">
                       {displayName.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h2 className="font-semibold text-sm md:text-base truncate text-white">{displayName}</h2>
+                    <h2 className="font-semibold text-sm md:text-base truncate text-foreground">{displayName}</h2>
                     {about && (
-                      <p className="text-[10px] md:text-xs text-gray-400 line-clamp-1">
+                      <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-1">
                         {about}
                       </p>
                     )}

@@ -46,7 +46,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="h-screen flex overflow-hidden bg-black">
+    <div className="h-screen flex overflow-hidden bg-background">
       {/* Sidebar - Responsive with drawer for mobile */}
       <Sidebar 
         isOpen={sidebarOpen} 
