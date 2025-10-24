@@ -80,6 +80,11 @@
     @apply border-border;
   }
 
+  *:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
   body {
     @apply bg-background text-foreground;
   }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useSendMessage } from '@/hooks/useSendMessage';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sparkles, User, StopCircle, Settings, Moon, Sun, LogOut } from 'lucide-react';
+import { Bot, User, StopCircle, Settings, Moon, Sun, LogOut, ChevronDown, Check } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MessageItem } from '@/components/chat/MessageItem';
 import { genUserName } from '@/lib/genUserName';
@@ -36,6 +36,12 @@ const EXAMPLE_PROMPTS = [
   "Suggest fun weekend activities",
 ];
 
+const AI_MODELS = [
+  { id: 'zai-default', name: 'ZAI' },
+  { id: 'zai-advanced', name: 'ZAI Advanced' },
+  { id: 'zai-fast', name: 'ZAI Fast' },
+] as const;
+
 export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
   const { user } = useCurrentUser();
   const author = useAuthor(user?.pubkey || '');
@@ -48,12 +54,24 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState('');
+  const [selectedModel, setSelectedModel] = useState<string>('zai-default');
+  const [isAITyping, setIsAITyping] = useState(false);
+
+  // Helper function for scrolling to bottom
+  const scrollToBottom = (smooth = true) => {
+    if (!bottomRef.current) return;
+    // After final render
+    requestAnimationFrame(() => {
+      bottomRef.current!.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' });
+    });
+  };
 
   // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+  useLayoutEffect(() => {
+    scrollToBottom(true);
+    // If content inside messages (images/code) loads with delay, small refresh:
+    const t = setTimeout(() => scrollToBottom(false), 50);
+    return () => clearTimeout(t);
   }, [messages]);
 
   // Auto-resize textarea
@@ -65,9 +83,10 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
   }, [inputValue]);
 
   const handleSend = () => {
-    if (!inputValue.trim() || isSending) return;
+    if (!inputValue.trim() || isSending || isAITyping) return;
     sendMessage(inputValue.trim());
     setInputValue('');
+    scrollToBottom(true);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -155,7 +174,7 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
         <div className="flex-1 flex items-center justify-center p-4">
           <Card className="p-6 md:p-8 text-center border-dashed max-w-md w-full">
             <div className="mb-4">
-              <Sparkles className="h-12 w-12 md:h-16 md:w-16 mx-auto text-primary/50" />
+              <Bot className="h-12 w-12 md:h-16 md:w-16 mx-auto text-primary/50" />
             </div>
             <h3 className="text-lg md:text-xl font-semibold mb-2 text-foreground">
               Welcome to ZAI
@@ -178,27 +197,44 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
       <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-xl">
         <div className="max-w-3xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <button
-              onClick={onToggleSidebar}
-              className="p-2 -ml-2 hover:bg-accent rounded-lg transition-colors flex-shrink-0"
-              aria-label="Toggle sidebar"
-            >
-              <svg className="h-6 w-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            
-            {/* Model Selector */}
-            <div className="flex-1 flex justify-center">
-              <select 
-                className="px-3 py-1.5 text-sm font-semibold bg-muted hover:bg-accent rounded-lg border-0 outline-none cursor-pointer transition-colors"
-                defaultValue="zai-default"
-                aria-label="Select AI model"
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onToggleSidebar}
+                className="p-2 -ml-2 hover:bg-accent rounded-lg transition-colors flex-shrink-0"
+                aria-label="Toggle sidebar"
               >
-                <option value="zai-default">ZAI</option>
-                <option value="zai-advanced">ZAI Advanced</option>
-                <option value="zai-fast">ZAI Fast</option>
-              </select>
+                <svg className="h-6 w-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              
+              {/* Model Selector */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="px-3 py-1.5 text-sm font-semibold bg-muted hover:bg-accent rounded-lg transition-colors inline-flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    {AI_MODELS.find(m => m.id === selectedModel)?.name || 'ZAI'}
+                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuLabel>Select Model</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {AI_MODELS.map((model) => (
+                    <DropdownMenuItem
+                      key={model.id}
+                      onClick={() => setSelectedModel(model.id)}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span>{model.name}</span>
+                        {selectedModel === model.id && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* User Menu */}
@@ -271,9 +307,9 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto" ref={scrollRef}>
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto pb-28 px-3 md:px-4">
           {isLoading ? (
-            <div className="space-y-6 py-6 px-4">
+            <div className="space-y-6 py-6">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="space-y-3">
                   <div className="flex gap-3">
@@ -299,6 +335,7 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
                     isUser={isUser}
                     isLast={isLast}
                     onCopy={handleCopy}
+                    onTypingChange={setIsAITyping}
                   />
                 );
               })}
@@ -310,7 +347,7 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
                 {/* Main Header */}
                 <div className="space-y-4 text-center">
                   <div className="inline-flex h-16 w-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 items-center justify-center">
-                    <Sparkles className="h-8 w-8 text-white animate-pulse" />
+                    <Bot className="h-8 w-8 text-white animate-pulse" />
                   </div>
                   <h2 className="text-3xl md:text-4xl font-bold">How can I help you today?</h2>
                   <p className="text-muted-foreground">Ask me anything, and I'll do my best to assist you</p>
@@ -374,7 +411,8 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
               </div>
             </div>
           )}
-          <div ref={bottomRef} />
+          {/* Sentinel for auto-scroll */}
+          <div ref={bottomRef} className="h-px scroll-mb-28" />
         </div>
       </div>
 
@@ -382,19 +420,20 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
       <div className="sticky bottom-0 border-t border-border bg-background">
         <div className="max-w-3xl mx-auto px-4 py-4">
           <div className="relative">
-            <div className="relative flex items-end gap-2 bg-muted/50 border border-border rounded-2xl p-3 focus-within:ring-2 focus-within:ring-primary/20">
+            <div className="relative flex items-center gap-2 bg-muted/50 border border-border rounded-2xl p-3 focus-within:ring-2 focus-within:ring-primary/20">
               <textarea
                 ref={textareaRef}
+                name="message"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Message ZAI..."
-                disabled={isSending}
+                placeholder={isAITyping ? "ZAI is typing..." : "Message ZAI..."}
+                disabled={isSending || isAITyping}
                 rows={1}
                 className="flex-1 bg-transparent resize-none outline-none max-h-[200px] text-sm placeholder:text-muted-foreground disabled:opacity-50"
               />
               
-              {isSending ? (
+              {isSending || isAITyping ? (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -407,7 +446,7 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
                 <Button
                   size="sm"
                   onClick={handleSend}
-                  disabled={!inputValue.trim()}
+                  disabled={!inputValue.trim() || isAITyping}
                   className="flex-shrink-0 h-8 w-8 p-0 rounded-lg"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

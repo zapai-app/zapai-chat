@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useDecryptMessage } from '@/hooks/useDecryptMessage';
+import { useTypingAnimation } from '@/hooks/useTypingAnimation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Sparkles, Copy, RotateCcw, User } from 'lucide-react';
+import { Bot, Copy, RotateCcw, User } from 'lucide-react';
 import { NoteContent } from '@/components/NoteContent';
 import { genUserName } from '@/lib/genUserName';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -13,25 +15,56 @@ interface MessageItemProps {
   isLast: boolean;
   onCopy: (content: string) => void;
   onRegenerate?: () => void;
+  onTypingChange?: (isTyping: boolean) => void;
 }
 
-export function MessageItem({ event, isUser, isLast, onCopy, onRegenerate }: MessageItemProps) {
+export function MessageItem({ event, isUser, isLast, onCopy, onRegenerate, onTypingChange }: MessageItemProps) {
   const author = useAuthor(event.pubkey);
   const { decryptedContent, isDecrypting, error } = useDecryptMessage(event);
+  
+  // Only apply typing animation to AI messages (last message)
+  const shouldType = !isUser && isLast && !isDecrypting && !error;
+  const { displayedText, isTyping } = useTypingAnimation(
+    shouldType ? decryptedContent : '',
+    20
+  );
+
+  // Notify parent about typing state
+  useEffect(() => {
+    if (onTypingChange && shouldType) {
+      onTypingChange(isTyping);
+    }
+  }, [isTyping, onTypingChange, shouldType]);
   
   const displayName = author.data?.metadata?.name || genUserName(event.pubkey);
   const avatarUrl = author.data?.metadata?.picture;
 
-  // Create a modified event with decrypted content for NoteContent
+  // Determine content to display
+  const contentToShow = shouldType ? displayedText : decryptedContent;
+
+  // Create a modified event with content for NoteContent
   const displayEvent = {
     ...event,
-    content: isDecrypting ? 'Decrypting...' : error ? 'Failed to decrypt message' : decryptedContent,
+    content: isDecrypting ? 'Decrypting...' : error ? 'Failed to decrypt message' : contentToShow,
   };
 
   return (
     <div
-      className={`group px-4 py-6 ${!isUser ? 'bg-muted/30' : ''} hover:bg-accent/50 transition-colors`}
+      className={`group relative px-4 py-6 ${!isUser ? 'bg-muted/30' : ''} hover:bg-accent/50 rounded-2xl transition-colors mb-3`}
     >
+      {/* Copy button - Fixed position for AI messages */}
+      {!isUser && !isDecrypting && !error && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onCopy(decryptedContent)}
+          className="absolute top-3 right-3 h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <Copy className="h-3.5 w-3.5 mr-1.5" />
+          Copy
+        </Button>
+      )}
+
       <div className="max-w-3xl mx-auto">
         <div className="flex gap-4">
           {/* Avatar */}
@@ -45,7 +78,7 @@ export function MessageItem({ event, isUser, isLast, onCopy, onRegenerate }: Mes
               </Avatar>
             ) : (
               <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-white" />
+                <Bot className="h-5 w-5 text-white" />
               </div>
             )}
           </div>
@@ -66,29 +99,18 @@ export function MessageItem({ event, isUser, isLast, onCopy, onRegenerate }: Mes
               )}
             </div>
 
-            {/* Actions - Only show for AI messages */}
-            {!isUser && !isDecrypting && !error && (
+            {/* Regenerate button - Only show for last AI message */}
+            {!isUser && !isDecrypting && !error && isLast && onRegenerate && (
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onCopy(decryptedContent)}
+                  onClick={onRegenerate}
                   className="h-7 px-2"
                 >
-                  <Copy className="h-3.5 w-3.5 mr-1.5" />
-                  Copy
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                  Regenerate
                 </Button>
-                {isLast && onRegenerate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onRegenerate}
-                    className="h-7 px-2"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                    Regenerate
-                  </Button>
-                )}
               </div>
             )}
           </div>
