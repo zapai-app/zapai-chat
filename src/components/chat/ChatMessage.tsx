@@ -48,14 +48,14 @@ export function ChatMessage({ event }: ChatMessageProps) {
         'h-8 w-8 md:h-9 md:w-9 flex-shrink-0 ring-2',
         isOwnMessage 
           ? 'ring-primary/30' 
-          : 'ring-white/[0.08]'
+          : 'ring-border'
       )}>
         {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} className="object-cover" />}
         <AvatarFallback className={cn(
           'text-xs md:text-sm font-bold',
           isOwnMessage 
-            ? 'bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-white' 
-            : 'bg-gradient-to-br from-white/10 to-white/[0.05] text-white'
+            ? 'bg-primary text-primary-foreground' 
+            : 'bg-muted text-muted-foreground'
         )}>
           {displayName.slice(0, 2).toUpperCase()}
         </AvatarFallback>
@@ -63,8 +63,8 @@ export function ChatMessage({ event }: ChatMessageProps) {
       
       <div className={cn('flex flex-col gap-1.5 flex-1 max-w-2xl', isOwnMessage && 'items-end')}>
         <div className={cn('flex items-center gap-2', isOwnMessage && 'flex-row-reverse')}>
-          <span className="text-xs md:text-sm font-semibold text-white">{displayName}</span>
-          <span className="text-[10px] md:text-xs text-gray-500">
+          <span className="text-xs md:text-sm font-semibold text-foreground">{displayName}</span>
+          <span className="text-[10px] md:text-xs text-muted-foreground">
             {new Date(event.created_at * 1000).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
@@ -74,8 +74,8 @@ export function ChatMessage({ event }: ChatMessageProps) {
  
         {isEncryptedError ? (
           <Alert className={cn(
-            'py-2 px-3 border-dashed bg-white/[0.02]',
-            isOwnMessage ? 'border-primary/30' : 'border-white/[0.08]'
+            'py-2 px-3 border-dashed bg-muted/50',
+            isOwnMessage ? 'border-primary/30' : 'border-border'
           )}>
             <Lock className="h-3 w-3" />
             <AlertDescription className="text-xs ml-2">
@@ -87,8 +87,8 @@ export function ChatMessage({ event }: ChatMessageProps) {
             className={cn(
               'rounded-2xl px-4 py-2.5 text-sm md:text-base leading-relaxed transition-all duration-200',
               isOwnMessage
-                ? 'bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-white rounded-tr-md'
-                : 'bg-white/[0.03] backdrop-blur-sm rounded-tl-md border border-white/[0.08] hover:bg-white/[0.05] hover:border-white/[0.12] text-white'
+                ? 'bg-primary text-primary-foreground rounded-tr-md'
+                : 'bg-muted text-foreground rounded-tl-md border border-border hover:bg-muted/80'
             )}
           >
             <MessageContent content={decryptedContent} />

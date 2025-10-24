@@ -52,8 +52,8 @@ export function Wallet() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <Card className="bg-white/[0.03] border-white/[0.08] max-w-md">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <Card className="bg-muted border-border max-w-md">
           <CardHeader>
             <CardTitle>Login Required</CardTitle>
             <CardDescription>You need to log in to access your wallet</CardDescription>
@@ -74,7 +74,7 @@ export function Wallet() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -82,13 +82,13 @@ export function Wallet() {
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            className="h-10 w-10 hover:bg-white/[0.08]"
+            className="h-10 w-10 hover:bg-accent"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
             <h1 className="text-3xl font-bold">Wallet</h1>
-            <p className="text-sm text-gray-400 mt-1">Manage your satoshis</p>
+            <p className="text-sm text-muted-foreground mt-1">Manage your satoshis</p>
           </div>
         </div>
 
@@ -102,11 +102,11 @@ export function Wallet() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="text-5xl font-bold text-white flex items-baseline gap-2">
+              <div className="text-5xl font-bold text-foreground flex items-baseline gap-2">
                 {balance.toLocaleString()}
-                <span className="text-xl text-gray-400">sats</span>
+                <span className="text-xl text-muted-foreground">sats</span>
               </div>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 ≈ ${(balance * 0.0001).toFixed(2)} USD
               </p>
             </div>
@@ -114,7 +114,7 @@ export function Wallet() {
         </Card>
 
         {/* Your Public Key */}
-        <Card className="bg-white/[0.03] border-white/[0.08]">
+        <Card className="bg-muted border-border">
           <CardHeader>
             <CardTitle>Your Account</CardTitle>
             <CardDescription>Your balance is linked to your Nostr public key</CardDescription>
@@ -126,13 +126,13 @@ export function Wallet() {
                 <Input
                   value={npub}
                   readOnly
-                  className="font-mono text-xs bg-white/[0.03] border-white/[0.08]"
+                  className="font-mono text-xs bg-muted border-border"
                 />
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={handleCopyPubkey}
-                  className="border-white/[0.08] hover:bg-white/[0.08]"
+                  className="border-border hover:bg-accent"
                 >
                   {copied ? (
                     <Check className="h-4 w-4 text-green-500" />
@@ -146,7 +146,7 @@ export function Wallet() {
         </Card>
 
         {/* Deposit Card */}
-        <Card className="bg-white/[0.03] border-white/[0.08]">
+        <Card className="bg-muted border-border">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-green-500" />
@@ -170,7 +170,7 @@ export function Wallet() {
                 placeholder="Enter amount in satoshis"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="bg-white/[0.03] border-white/[0.08]"
+                className="bg-muted border-border"
               />
             </div>
 
@@ -182,7 +182,7 @@ export function Wallet() {
               Generate Lightning Invoice
             </Button>
 
-            <div className="text-xs text-gray-500 space-y-1">
+            <div className="text-xs text-muted-foreground space-y-1">
               <p><strong>How it works:</strong></p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
                 <li>Enter the amount you want to deposit</li>
@@ -195,24 +195,24 @@ export function Wallet() {
         </Card>
 
         {/* API Implementation Guide */}
-        <Card className="bg-white/[0.03] border-white/[0.08]">
+        <Card className="bg-muted border-border">
           <CardHeader>
             <CardTitle>🔧 Server Implementation Needed</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
-              <h3 className="font-semibold text-white mb-2">Required API Endpoints:</h3>
-              <div className="space-y-3 text-gray-400">
-                <div className="bg-white/[0.03] p-3 rounded border border-white/[0.08]">
+              <h3 className="font-semibold text-foreground mb-2">Required API Endpoints:</h3>
+              <div className="space-y-3 text-muted-foreground">
+                <div className="bg-muted p-3 rounded border border-border">
                   <code className="text-xs">GET /api/wallet/:pubkey/balance</code>
                   <p className="mt-1">Returns current balance for user's public key</p>
                 </div>
-                <div className="bg-white/[0.03] p-3 rounded border border-white/[0.08]">
+                <div className="bg-muted p-3 rounded border border-border">
                   <code className="text-xs">POST /api/wallet/:pubkey/invoice</code>
                   <p className="mt-1">Creates Lightning invoice for deposit</p>
                   <p className="text-xs mt-1">Body: {`{ "amount": number }`}</p>
                 </div>
-                <div className="bg-white/[0.03] p-3 rounded border border-white/[0.08]">
+                <div className="bg-muted p-3 rounded border border-border">
                   <code className="text-xs">GET /api/wallet/:pubkey/transactions</code>
                   <p className="mt-1">Returns transaction history</p>
                 </div>
@@ -220,8 +220,8 @@ export function Wallet() {
             </div>
 
             <div>
-              <h3 className="font-semibold text-white mb-2">Implementation Suggestions:</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-400">
+              <h3 className="font-semibold text-foreground mb-2">Implementation Suggestions:</h3>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li>Use LND, CLN, or Eclair for Lightning Network integration</li>
                 <li>Store balances in PostgreSQL or similar database</li>
                 <li>Implement webhook for payment confirmation</li>
