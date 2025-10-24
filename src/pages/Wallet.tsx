@@ -1,53 +1,65 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ArrowLeft, Wallet as WalletIcon, Plus, Zap, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { LoginArea } from '@/components/auth/LoginArea';
-import { useToast } from '@/hooks/useToast';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ZapButton } from '@/components/ZapButton';
+import { useAuthor } from '@/hooks/useAuthor';
+import { genUserName } from '@/lib/genUserName';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { nip19 } from 'nostr-tools';
 
 export function Wallet() {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
-  const { toast } = useToast();
-  const [amount, setAmount] = useState('');
-  const [copied, setCopied] = useState(false);
-  
-  // Mock balance - TODO: fetch from API in production
-  const balance = 0; // API should return actual balance
 
-  const npub = user ? nip19.npubEncode(user.pubkey) : '';
-
-  const handleCopyPubkey = async () => {
-    if (npub) {
-      await navigator.clipboard.writeText(npub);
-      setCopied(true);
-      toast({ title: 'Public key copied!' });
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleDeposit = async () => {
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      toast({ 
-        title: 'Invalid amount', 
-        description: 'Please enter a valid satoshi amount',
-        variant: 'destructive' 
-      });
-      return;
+  // Get bot pubkey from environment variable
+  const botPubkey = useMemo(() => {
+    const envPubkey = import.meta.env.VITE_TARGET_PUBKEY;
+    
+    if (!envPubkey) {
+      return null;
     }
 
-    // TODO: Connect to server API to generate Lightning invoice
-    toast({
-      title: 'Coming soon',
-      description: 'Lightning invoice generation will be implemented on the server side'
-    });
-  };
+    // If it's already in hex format, return it
+    if (envPubkey.match(/^[0-9a-f]{64}$/i)) {
+      return envPubkey;
+    }
+
+    // Try to decode from npub format
+    try {
+      const decoded = nip19.decode(envPubkey);
+      if (decoded.type === 'npub' && typeof decoded.data === 'string') {
+        return decoded.data;
+      }
+    } catch {
+      console.error('Invalid VITE_TARGET_PUBKEY format. Use hex or npub format.');
+    }
+
+    return null;
+  }, []);
+
+  // Fetch bot's profile
+  const botAuthor = useAuthor(botPubkey || undefined);
+  const botMetadata = botAuthor.data?.metadata;
+  const botDisplayName = botMetadata?.name || botMetadata?.display_name || genUserName(botPubkey || '');
+
+  // Create a minimal event object for the bot (required by ZapButton)
+  const botEvent = useMemo(() => {
+    if (!botPubkey) return null;
+    return {
+      id: '',
+      pubkey: botPubkey,
+      created_at: Math.floor(Date.now() / 1000),
+      kind: 0,
+      tags: [],
+      content: '',
+      sig: '',
+    };
+  }, [botPubkey]);
+
 
   if (!user) {
     return (
@@ -55,7 +67,7 @@ export function Wallet() {
         <Card className="bg-muted border-border max-w-md">
           <CardHeader>
             <CardTitle>Login Required</CardTitle>
-            <CardDescription>You need to log in to access your wallet</CardDescription>
+            <CardDescription>You need to log in to send zaps</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <LoginArea className="w-full" />
@@ -72,9 +84,34 @@ export function Wallet() {
     );
   }
 
+  if (!botPubkey) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <Card className="bg-muted border-border max-w-md">
+          <CardHeader>
+            <CardTitle>Configuration Error</CardTitle>
+            <CardDescription>Bot public key is not configured</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="ghost"
+              onClick={() => navigate(-1)}
+              className="w-full"
+            >
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Mock balance - will be fetched from server later
+  const balance = 0;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
+      <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button
@@ -85,149 +122,145 @@ export function Wallet() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold">Wallet</h1>
-            <p className="text-sm text-muted-foreground mt-1">Manage your satoshis</p>
+            <p className="text-sm text-muted-foreground mt-1">Manage your account balance</p>
           </div>
         </div>
 
         {/* Balance Card */}
-        <Card className="bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <WalletIcon className="h-5 w-5 text-primary" />
-              <CardTitle>Current Balance</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="text-5xl font-bold text-foreground flex items-baseline gap-2">
-                {balance.toLocaleString()}
-                <span className="text-xl text-muted-foreground">sats</span>
+        <Card className="overflow-hidden border-2">
+          <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background p-8">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Current Balance
+                </p>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-5xl font-bold tracking-tight">
+                    {balance.toLocaleString()}
+                  </span>
+                  <span className="text-2xl font-semibold text-muted-foreground">
+                    sats
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  ≈ ${(balance * 0.0001).toFixed(2)} USD
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                ≈ ${(balance * 0.0001).toFixed(2)} USD
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Your Public Key */}
-        <Card className="bg-muted border-border">
-          <CardHeader>
-            <CardTitle>Your Account</CardTitle>
-            <CardDescription>Your balance is linked to your Nostr public key</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Public Key (npub)</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={npub}
-                  readOnly
-                  className="font-mono text-xs bg-muted border-border"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleCopyPubkey}
-                  className="border-border hover:bg-accent"
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
+              <div className="hidden sm:flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
+                <Zap className="h-12 w-12 text-primary" />
               </div>
             </div>
-          </CardContent>
+          </div>
         </Card>
 
-        {/* Deposit Card */}
-        <Card className="bg-muted border-border">
+        {/* Charge Account Section */}
+        <Card>
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-green-500" />
-              <CardTitle>Deposit Satoshis</CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <Zap className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Charge Your Account</CardTitle>
+                <CardDescription>
+                  Send a Lightning zap to add funds to your balance
+                </CardDescription>
+              </div>
             </div>
-            <CardDescription>Add funds to your account via Lightning Network</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert className="bg-yellow-500/10 border-yellow-500/20">
-              <Zap className="h-4 w-4 text-yellow-500" />
-              <AlertDescription className="text-sm text-yellow-200">
-                <strong>Server API Required:</strong> Lightning invoice generation needs to be implemented on the server side.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (sats)</Label>
-              <Input
-                id="amount"
-                type="number"
-                placeholder="Enter amount in satoshis"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="bg-muted border-border"
-              />
-            </div>
-
-            <Button
-              onClick={handleDeposit}
-              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-            >
-              <Zap className="h-4 w-4 mr-2" />
-              Generate Lightning Invoice
-            </Button>
-
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p><strong>How it works:</strong></p>
-              <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>Enter the amount you want to deposit</li>
-                <li>Server generates a Lightning Network invoice</li>
-                <li>Pay the invoice from any Lightning wallet</li>
-                <li>Funds are credited to your account immediately</li>
-              </ol>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* API Implementation Guide */}
-        <Card className="bg-muted border-border">
-          <CardHeader>
-            <CardTitle>🔧 Server Implementation Needed</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <div>
-              <h3 className="font-semibold text-foreground mb-2">Required API Endpoints:</h3>
-              <div className="space-y-3 text-muted-foreground">
-                <div className="bg-muted p-3 rounded border border-border">
-                  <code className="text-xs">GET /api/wallet/:pubkey/balance</code>
-                  <p className="mt-1">Returns current balance for user's public key</p>
-                </div>
-                <div className="bg-muted p-3 rounded border border-border">
-                  <code className="text-xs">POST /api/wallet/:pubkey/invoice</code>
-                  <p className="mt-1">Creates Lightning invoice for deposit</p>
-                  <p className="text-xs mt-1">Body: {`{ "amount": number }`}</p>
-                </div>
-                <div className="bg-muted p-3 rounded border border-border">
-                  <code className="text-xs">GET /api/wallet/:pubkey/transactions</code>
-                  <p className="mt-1">Returns transaction history</p>
-                </div>
+          <CardContent className="space-y-6">
+            {/* Bot Profile */}
+            <div className="flex items-center gap-4 rounded-lg border bg-muted/50 p-4">
+              <Avatar className="h-14 w-14 border-2 border-background">
+                <AvatarImage src={botMetadata?.picture} alt={botDisplayName} />
+                <AvatarFallback className="bg-primary/10">
+                  <Zap className="h-7 w-7 text-primary" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold truncate">{botDisplayName}</h3>
+                {botMetadata?.about && (
+                  <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                    {botMetadata.about}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div>
-              <h3 className="font-semibold text-foreground mb-2">Implementation Suggestions:</h3>
-              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>Use LND, CLN, or Eclair for Lightning Network integration</li>
-                <li>Store balances in PostgreSQL or similar database</li>
-                <li>Implement webhook for payment confirmation</li>
-                <li>Add proper authentication and rate limiting</li>
-                <li>Consider using BTCPay Server for easier integration</li>
-              </ul>
-            </div>
+            {/* Zap Button */}
+            {botEvent && (
+              <div className="space-y-4">
+                <div className="rounded-lg border-2 border-dashed border-primary/20 bg-primary/5 p-6">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                      <Zap className="h-8 w-8 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-lg font-semibold">Send Lightning Payment</h4>
+                      <p className="text-sm text-muted-foreground max-w-sm">
+                        Zaps sent to this account will be credited to your balance instantly
+                      </p>
+                    </div>
+                    <ZapButton 
+                      target={botEvent}
+                      className="w-full max-w-sm h-12 text-base font-semibold"
+                      showCount={false}
+                    />
+                  </div>
+                </div>
+
+                {/* Info Cards */}
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Card className="border-muted-foreground/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 mt-0.5">
+                          <Zap className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <h5 className="font-semibold text-sm">Instant Credit</h5>
+                          <p className="text-xs text-muted-foreground">
+                            Your balance updates immediately after payment confirmation
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-muted-foreground/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 mt-0.5">
+                          <Zap className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <h5 className="font-semibold text-sm">Auto-Linked</h5>
+                          <p className="text-xs text-muted-foreground">
+                            Zaps are automatically linked to your Nostr account
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-muted-foreground/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 mt-0.5">
+                          <Zap className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <h5 className="font-semibold text-sm">Lightning Fast</h5>
+                          <p className="text-xs text-muted-foreground">
+                            Pay with any Lightning wallet for quick transactions
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
