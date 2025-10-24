@@ -1,4 +1,4 @@
-# NIP-XX: Chat Sessions
+# NIP-1005: Chat Sessions
 
 ## Abstract
 
