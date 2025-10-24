@@ -55,11 +55,6 @@ export function useSendMessage(targetPubkey: string | null) {
       queryClient.invalidateQueries({
         queryKey: ['chat-messages', user?.pubkey, targetPubkey],
       });
-      
-      toast({
-        title: 'Message sent',
-        description: 'Your encrypted message has been delivered.',
-      });
     },
     onError: (error) => {
       console.error('Failed to send message:', error);

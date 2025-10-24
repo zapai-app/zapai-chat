@@ -2,13 +2,26 @@ import { useEffect, useRef, useState } from 'react';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useSendMessage } from '@/hooks/useSendMessage';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useAuthor } from '@/hooks/useAuthor';
 import { useToast } from '@/hooks/useToast';
+import { useTheme } from '@/hooks/useTheme';
+import { useLoginActions } from '@/hooks/useLoginActions';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkles, Copy, RotateCcw, User, StopCircle } from 'lucide-react';
-import { NoteContent } from '@/components/NoteContent';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Sparkles, User, StopCircle, Settings, Moon, Sun, LogOut } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { MessageItem } from '@/components/chat/MessageItem';
+import { genUserName } from '@/lib/genUserName';
 
 interface ChatWindowProps {
   targetPubkey: string | null;
@@ -25,9 +38,12 @@ const EXAMPLE_PROMPTS = [
 
 export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
   const { user } = useCurrentUser();
+  const author = useAuthor(user?.pubkey || '');
   const { data: messages, isLoading } = useChatMessages(targetPubkey);
   const { mutate: sendMessage, isPending: isSending } = useSendMessage(targetPubkey);
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+  const { logout } = useLoginActions();
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -80,6 +96,7 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
               <button
                 onClick={onToggleSidebar}
                 className="p-2 -ml-2 hover:bg-accent rounded-lg transition-colors flex-shrink-0"
+                aria-label="Toggle sidebar"
               >
                 <svg className="h-6 w-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -121,6 +138,7 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
               <button
                 onClick={onToggleSidebar}
                 className="p-2 -ml-2 hover:bg-accent rounded-lg transition-colors flex-shrink-0"
+                aria-label="Toggle sidebar"
               >
                 <svg className="h-6 w-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -156,7 +174,7 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Header - Minimal like ChatGPT */}
+      {/* Header - With Model Selector like ChatGPT */}
       <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-xl">
         <div className="max-w-3xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-3">
@@ -169,10 +187,84 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <div className="flex-1 text-center">
-              <h2 className="font-semibold text-sm text-muted-foreground">ZAI</h2>
+            
+            {/* Model Selector */}
+            <div className="flex-1 flex justify-center">
+              <select 
+                className="px-3 py-1.5 text-sm font-semibold bg-muted hover:bg-accent rounded-lg border-0 outline-none cursor-pointer transition-colors"
+                defaultValue="zai-default"
+                aria-label="Select AI model"
+              >
+                <option value="zai-default">ZAI</option>
+                <option value="zai-advanced">ZAI Advanced</option>
+                <option value="zai-fast">ZAI Fast</option>
+              </select>
             </div>
-            <div className="w-10" />
+
+            {/* User Menu */}
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="h-8 w-8 rounded-full hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    aria-label="User menu"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage 
+                        src={author.data?.metadata?.picture} 
+                        alt={author.data?.metadata?.name || genUserName(user.pubkey)}
+                      />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage 
+                          src={author.data?.metadata?.picture} 
+                          alt={author.data?.metadata?.name || genUserName(user.pubkey)}
+                        />
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          <User className="h-5 w-5" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="font-semibold">
+                          {author.data?.metadata?.name || genUserName(user.pubkey)}
+                        </span>
+                        {author.data?.metadata?.nip05 && (
+                          <span className="text-xs text-muted-foreground">
+                            {author.data.metadata.nip05}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+                    {theme === 'light' ? (
+                      <Moon className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Sun className="mr-2 h-4 w-4" />
+                    )}
+                    <span>Toggle Theme</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>
@@ -201,91 +293,83 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
                 const isLast = index === messages.length - 1;
 
                 return (
-                  <div
+                  <MessageItem
                     key={event.id}
-                    className={`group px-4 py-6 ${!isUser ? 'bg-muted/30' : ''} hover:bg-accent/50 transition-colors`}
-                  >
-                    <div className="max-w-3xl mx-auto">
-                      <div className="flex gap-4">
-                        {/* Avatar */}
-                        <div className="flex-shrink-0">
-                          {isUser ? (
-                            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                              <User className="h-5 w-5 text-primary-foreground" />
-                            </div>
-                          ) : (
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                              <Sparkles className="h-5 w-5 text-white" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0 space-y-3">
-                          <div className="font-semibold text-sm">
-                            {isUser ? 'You' : 'ZAI'}
-                          </div>
-                          
-                          <div className="prose prose-sm max-w-none dark:prose-invert">
-                            <NoteContent event={event} className="text-sm leading-relaxed" />
-                          </div>
-
-                          {/* Actions - Only show for AI messages */}
-                          {!isUser && (
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleCopy(event.content)}
-                                className="h-7 px-2"
-                              >
-                                <Copy className="h-3.5 w-3.5 mr-1.5" />
-                                Copy
-                              </Button>
-                              {isLast && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => sendMessage(messages[messages.length - 2]?.content || '')}
-                                  className="h-7 px-2"
-                                >
-                                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                                  Regenerate
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    event={event}
+                    isUser={isUser}
+                    isLast={isLast}
+                    onCopy={handleCopy}
+                  />
                 );
               })}
             </div>
           ) : (
-            // Empty state with example prompts
+            // Empty state with capabilities and example prompts
             <div className="flex items-center justify-center min-h-full p-6">
-              <div className="max-w-2xl w-full space-y-8 text-center py-12">
-                <div className="space-y-4">
+              <div className="max-w-3xl w-full space-y-12 py-12">
+                {/* Main Header */}
+                <div className="space-y-4 text-center">
                   <div className="inline-flex h-16 w-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 items-center justify-center">
-                    <Sparkles className="h-8 w-8 text-white" />
+                    <Sparkles className="h-8 w-8 text-white animate-pulse" />
                   </div>
-                  <h2 className="text-3xl font-bold">How can I help you today?</h2>
+                  <h2 className="text-3xl md:text-4xl font-bold">How can I help you today?</h2>
+                  <p className="text-muted-foreground">Ask me anything, and I'll do my best to assist you</p>
+                </div>
+
+                {/* Capabilities */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                  <Card className="p-4 text-center space-y-2 border-dashed hover:border-solid hover:bg-accent/50 transition-all">
+                    <div className="inline-flex h-10 w-10 rounded-lg bg-blue-500/10 items-center justify-center mx-auto">
+                      <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                    </div>
+                    <h3 className="font-semibold">Creative Writing</h3>
+                    <p className="text-xs text-muted-foreground">Generate stories, poems, and creative content</p>
+                  </Card>
+                  
+                  <Card className="p-4 text-center space-y-2 border-dashed hover:border-solid hover:bg-accent/50 transition-all">
+                    <div className="inline-flex h-10 w-10 rounded-lg bg-green-500/10 items-center justify-center mx-auto">
+                      <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                    </div>
+                    <h3 className="font-semibold">Code Assistant</h3>
+                    <p className="text-xs text-muted-foreground">Debug, explain, and write code in any language</p>
+                  </Card>
+                  
+                  <Card className="p-4 text-center space-y-2 border-dashed hover:border-solid hover:bg-accent/50 transition-all">
+                    <div className="inline-flex h-10 w-10 rounded-lg bg-purple-500/10 items-center justify-center mx-auto">
+                      <svg className="h-5 w-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                    <h3 className="font-semibold">Learning & Research</h3>
+                    <p className="text-xs text-muted-foreground">Explain concepts and answer questions</p>
+                  </Card>
                 </div>
 
                 {/* Example Prompts */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl mx-auto">
-                  {EXAMPLE_PROMPTS.map((prompt, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleExampleClick(prompt)}
-                      className="p-4 text-left border border-border rounded-xl hover:bg-accent transition-colors group"
-                    >
-                      <p className="text-sm text-muted-foreground group-hover:text-foreground">
-                        {prompt}
-                      </p>
-                    </button>
-                  ))}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-muted-foreground text-center">Try asking:</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
+                    {EXAMPLE_PROMPTS.map((prompt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleExampleClick(prompt)}
+                        className="p-4 text-left border border-border rounded-xl hover:bg-accent hover:border-primary/50 transition-all group"
+                      >
+                        <div className="flex items-start gap-3">
+                          <svg className="h-4 w-4 text-muted-foreground group-hover:text-primary flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          <p className="text-sm text-muted-foreground group-hover:text-foreground">
+                            {prompt}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

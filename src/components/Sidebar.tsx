@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { LoginArea } from '@/components/auth/LoginArea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -269,8 +268,6 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
                 <Settings className="h-4 w-4 transition-transform duration-200 hover:rotate-90" />
                 <span className="text-sm">Settings</span>
               </Button>
-              
-              <LoginArea className="w-full" />
             </div>
           </div>
         </div>
