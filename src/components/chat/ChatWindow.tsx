@@ -63,7 +63,6 @@ export function ChatWindow({ targetPubkey, sessionId, onToggleSidebar }: ChatWin
   const [isAITyping, setIsAITyping] = useState(false);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const previousMessageCountRef = useRef(0);
-  const [lastBotMessageId, setLastBotMessageId] = useState<string | null>(null);
 
   // Helper function for scrolling to bottom
   const scrollToBottom = (smooth = true) => {
