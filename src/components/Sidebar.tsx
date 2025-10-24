@@ -19,11 +19,16 @@ import {
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useChatSessions } from '@/hooks/useChatSessions';
+import { useUpdateChatSession } from '@/hooks/useUpdateChatSession';
+import { useDeleteChatSession } from '@/hooks/useDeleteChatSession';
 
 interface SidebarProps {
   isOpen?: boolean;
   onToggle?: () => void;
   onNewChat?: () => void;
+  activeSessionId?: string | null;
+  onSessionSelect?: (sessionId: string) => void;
 }
 
 interface Conversation {
@@ -31,27 +36,39 @@ interface Conversation {
   title: string;
   timestamp: number;
   preview?: string;
+  eventId: string;
 }
 
-export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
+export function Sidebar({ 
+  isOpen = true, 
+  onToggle, 
+  onNewChat,
+  activeSessionId,
+  onSessionSelect 
+}: SidebarProps) {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
+  const { data: sessions, isLoading: sessionsLoading } = useChatSessions();
+  const { mutate: updateSession } = useUpdateChatSession();
+  const { mutate: deleteSession } = useDeleteChatSession();
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   
-  // Mock conversations - will be replaced with actual data
-  const [conversations, setConversations] = useState<Conversation[]>([
-    { id: '1', title: 'Getting started with AI', timestamp: Date.now() - 3600000, preview: 'How do I use this AI assistant?' },
-    { id: '2', title: 'Recipe ideas', timestamp: Date.now() - 7200000, preview: 'Can you suggest some healthy recipes?' },
-    { id: '3', title: 'Learning programming', timestamp: Date.now() - 86400000, preview: 'What programming language should I learn first?' },
-  ]);
-  
   // Mock balance - TODO: fetch from API in production
   const balance = 0;
 
-  const handleDeleteConversation = (id: string) => {
-    setConversations(conversations.filter(c => c.id !== id));
+  // Convert chat sessions to conversations format
+  const conversations: Conversation[] = (sessions || []).map(session => ({
+    id: session.id,
+    title: session.name,
+    timestamp: session.lastEditedAt * 1000, // Convert to milliseconds
+    preview: undefined,
+    eventId: session.event.id,
+  }));
+
+  const handleDeleteConversation = (id: string, eventId: string) => {
+    deleteSession({ sessionId: id, eventId });
   };
 
   const handleStartEdit = (conv: Conversation) => {
@@ -60,9 +77,7 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
   };
 
   const handleSaveEdit = (id: string) => {
-    setConversations(conversations.map(c => 
-      c.id === id ? { ...c, title: editTitle } : c
-    ));
+    updateSession({ sessionId: id, newName: editTitle });
     setEditingId(null);
   };
 
@@ -166,7 +181,13 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
 
             {/* Conversations List */}
             <ScrollArea className="flex-1 px-3">
-              {filteredConversations.length === 0 ? (
+              {sessionsLoading ? (
+                <div className="py-2 space-y-2">
+                  <div className="h-12 bg-sidebar-accent rounded-lg animate-pulse" />
+                  <div className="h-12 bg-sidebar-accent rounded-lg animate-pulse" />
+                  <div className="h-12 bg-sidebar-accent rounded-lg animate-pulse" />
+                </div>
+              ) : filteredConversations.length === 0 ? (
                 <div className="py-8 text-center">
                   <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
@@ -186,6 +207,7 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
                         <ConversationItem
                           key={conv.id}
                           conversation={conv}
+                          isActive={activeSessionId === conv.id}
                           isEditing={editingId === conv.id}
                           editTitle={editTitle}
                           setEditTitle={setEditTitle}
@@ -193,6 +215,7 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
                           onSaveEdit={handleSaveEdit}
                           onCancelEdit={handleCancelEdit}
                           onDelete={handleDeleteConversation}
+                          onClick={() => onSessionSelect?.(conv.id)}
                         />
                       ))}
                     </div>
@@ -206,6 +229,7 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
                         <ConversationItem
                           key={conv.id}
                           conversation={conv}
+                          isActive={activeSessionId === conv.id}
                           isEditing={editingId === conv.id}
                           editTitle={editTitle}
                           setEditTitle={setEditTitle}
@@ -213,6 +237,7 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
                           onSaveEdit={handleSaveEdit}
                           onCancelEdit={handleCancelEdit}
                           onDelete={handleDeleteConversation}
+                          onClick={() => onSessionSelect?.(conv.id)}
                         />
                       ))}
                     </div>
@@ -226,6 +251,7 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
                         <ConversationItem
                           key={conv.id}
                           conversation={conv}
+                          isActive={activeSessionId === conv.id}
                           isEditing={editingId === conv.id}
                           editTitle={editTitle}
                           setEditTitle={setEditTitle}
@@ -233,6 +259,7 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
                           onSaveEdit={handleSaveEdit}
                           onCancelEdit={handleCancelEdit}
                           onDelete={handleDeleteConversation}
+                          onClick={() => onSessionSelect?.(conv.id)}
                         />
                       ))}
                     </div>
@@ -279,6 +306,7 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
 // Conversation Item Component
 function ConversationItem({
   conversation,
+  isActive,
   isEditing,
   editTitle,
   setEditTitle,
@@ -286,15 +314,18 @@ function ConversationItem({
   onSaveEdit,
   onCancelEdit,
   onDelete,
+  onClick,
 }: {
   conversation: Conversation;
+  isActive?: boolean;
   isEditing: boolean;
   editTitle: string;
   setEditTitle: (title: string) => void;
   onStartEdit: (conv: Conversation) => void;
   onSaveEdit: (id: string) => void;
   onCancelEdit: () => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, eventId: string) => void;
+  onClick?: () => void;
 }) {
   return (
     <div className="group relative">
@@ -328,21 +359,27 @@ function ConversationItem({
           </Button>
         </div>
       ) : (
-        <Button
-          variant="ghost"
-          className="w-full justify-start h-auto py-2.5 px-3 hover:bg-sidebar-accent text-left group/item"
-        >
-          <div className="flex items-start gap-2 flex-1 min-w-0">
-            <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">
-                {conversation.title}
-              </p>
+        <div className="relative">
+          <Button
+            variant="ghost"
+            onClick={onClick}
+            className={cn(
+              "w-full justify-start h-auto py-2.5 px-3 hover:bg-sidebar-accent text-left group/item",
+              isActive && "bg-sidebar-accent"
+            )}
+          >
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                  {conversation.title}
+                </p>
+              </div>
             </div>
-          </div>
+          </Button>
           
           {/* Action buttons - show on hover */}
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity bg-sidebar">
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-sidebar pointer-events-none group-hover:pointer-events-auto">
             <Button
               size="sm"
               variant="ghost"
@@ -359,14 +396,14 @@ function ConversationItem({
               variant="ghost"
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete(conversation.id);
+                onDelete(conversation.id, conversation.eventId);
               }}
               className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
-        </Button>
+        </div>
       )}
     </div>
   );

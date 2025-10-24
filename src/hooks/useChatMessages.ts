@@ -6,14 +6,15 @@ import type { NostrEvent } from '@nostrify/nostrify';
 /**
  * Hook to fetch encrypted DM messages between current user and target pubkey
  * Uses NIP-04 (kind 4) encryption
+ * Optionally filters messages by session ID
  */
-export function useChatMessages(targetPubkey: string | null) {
+export function useChatMessages(targetPubkey: string | null, sessionId?: string) {
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
 
   return useQuery<NostrEvent[], Error>({
-    queryKey: ['chat-messages', user?.pubkey, targetPubkey],
-    enabled: !!user?.pubkey && !!targetPubkey,
+    queryKey: ['chat-messages', user?.pubkey, targetPubkey, sessionId],
+    enabled: !!user?.pubkey && !!targetPubkey && !!sessionId,
     refetchInterval: 5000, // Poll every 5 seconds for new messages
     queryFn: async (c) => {
       if (!user?.pubkey || !targetPubkey) return [];
@@ -36,7 +37,7 @@ export function useChatMessages(targetPubkey: string | null) {
       // A message is valid if:
       // 1. It's from current user to target (author=user, tag=target)
       // 2. It's from target to current user (author=target, tag=user)
-      const relevantMessages = events.filter((event) => {
+      let relevantMessages = events.filter((event) => {
         const pTag = event.tags.find(([name]) => name === 'p')?.[1];
         
         // Message from current user to target
@@ -51,6 +52,14 @@ export function useChatMessages(targetPubkey: string | null) {
         
         return false;
       });
+
+      // If sessionId is provided, filter messages by session tag
+      if (sessionId) {
+        relevantMessages = relevantMessages.filter((event) => {
+          const sessionTag = event.tags.find(([name]) => name === 'session')?.[1];
+          return sessionTag === sessionId;
+        });
+      }
 
       // Sort messages by created_at timestamp (oldest first)
       return relevantMessages.sort((a, b) => a.created_at - b.created_at);

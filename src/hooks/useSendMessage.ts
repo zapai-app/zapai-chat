@@ -3,11 +3,15 @@ import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/useToast';
 
+interface SendMessageOptions {
+  sessionId?: string;
+}
+
 /**
  * Hook to send encrypted DM messages to a target pubkey
  * Uses NIP-04 (kind 4) encryption only
  */
-export function useSendMessage(targetPubkey: string | null) {
+export function useSendMessage(targetPubkey: string | null, options?: SendMessageOptions) {
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
   const { toast } = useToast();
@@ -37,11 +41,17 @@ export function useSendMessage(targetPubkey: string | null) {
         throw new Error('Signer does not support NIP-04 encryption');
       }
 
+      // Build tags array - always include p tag, optionally add session tag
+      const tags: string[][] = [['p', targetPubkey]];
+      if (options?.sessionId) {
+        tags.push(['session', options.sessionId]);
+      }
+
       // Create and sign the DM event (kind 4)
       const event = await user.signer.signEvent({
         kind: 4,
         content: encryptedContent,
-        tags: [['p', targetPubkey]],
+        tags,
         created_at: Math.floor(Date.now() / 1000),
       });
 
@@ -53,7 +63,7 @@ export function useSendMessage(targetPubkey: string | null) {
     onSuccess: () => {
       // Invalidate the chat messages query to fetch the new message
       queryClient.invalidateQueries({
-        queryKey: ['chat-messages', user?.pubkey, targetPubkey],
+        queryKey: ['chat-messages', user?.pubkey, targetPubkey, options?.sessionId],
       });
     },
     onError: (error) => {

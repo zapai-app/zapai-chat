@@ -2,21 +2,23 @@
   "name": "ZAI",
   "short_name": "ZAI",
   "description": "AI Chat on Nostr",
-  "start_url": "/",
+  "start_url": "/zapai-chat/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/zapai-chat/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png", 
+      "src": "/zapai-chat/icon-512.png", 
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

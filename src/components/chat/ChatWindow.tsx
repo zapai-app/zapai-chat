@@ -21,10 +21,12 @@ import {
 import { Bot, User, StopCircle, Settings, Moon, Sun, LogOut, ChevronDown, Check } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MessageItem } from '@/components/chat/MessageItem';
+import { ThinkingIndicator } from '@/components/chat/ThinkingIndicator';
 import { genUserName } from '@/lib/genUserName';
 
 interface ChatWindowProps {
   targetPubkey: string | null;
+  sessionId: string | null;
   onToggleSidebar?: () => void;
   isSidebarOpen?: boolean;
 }
@@ -42,11 +44,14 @@ const AI_MODELS = [
   { id: 'zai-fast', name: 'ZAI Fast' },
 ] as const;
 
-export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
+export function ChatWindow({ targetPubkey, sessionId, onToggleSidebar }: ChatWindowProps) {
   const { user } = useCurrentUser();
   const author = useAuthor(user?.pubkey || '');
-  const { data: messages, isLoading } = useChatMessages(targetPubkey);
-  const { mutate: sendMessage, isPending: isSending } = useSendMessage(targetPubkey);
+  const { data: messages, isLoading } = useChatMessages(targetPubkey, sessionId || undefined);
+  const { mutate: sendMessage, isPending: isSending } = useSendMessage(
+    targetPubkey,
+    sessionId ? { sessionId } : undefined
+  );
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const { logout } = useLoginActions();
@@ -56,6 +61,9 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState('');
   const [selectedModel, setSelectedModel] = useState<string>('zai-default');
   const [isAITyping, setIsAITyping] = useState(false);
+  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const previousMessageCountRef = useRef(0);
+  const [lastBotMessageId, setLastBotMessageId] = useState<string | null>(null);
 
   // Helper function for scrolling to bottom
   const scrollToBottom = (smooth = true) => {
@@ -66,13 +74,41 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
     });
   };
 
-  // Auto-scroll to bottom when new messages arrive
+  // Track when user sends a message and bot responds
+  useEffect(() => {
+    if (!messages || !user || !targetPubkey) {
+      setIsWaitingForResponse(false);
+      return;
+    }
+
+    // Check if messages increased (new message arrived)
+    const currentCount = messages.length;
+    const previousCount = previousMessageCountRef.current;
+
+    if (currentCount > previousCount) {
+      // New message arrived
+      const lastMessage = messages[messages.length - 1];
+      
+      // If last message is from bot, stop waiting
+      if (lastMessage.pubkey === targetPubkey) {
+        setIsWaitingForResponse(false);
+      }
+      // If last message is from user, start waiting
+      else if (lastMessage.pubkey === user.pubkey) {
+        setIsWaitingForResponse(true);
+      }
+    }
+
+    previousMessageCountRef.current = currentCount;
+  }, [messages, user, targetPubkey]);
+
+  // Auto-scroll to bottom when new messages arrive or when thinking indicator shows
   useLayoutEffect(() => {
     scrollToBottom(true);
     // If content inside messages (images/code) loads with delay, small refresh:
     const t = setTimeout(() => scrollToBottom(false), 50);
     return () => clearTimeout(t);
-  }, [messages]);
+  }, [messages, isWaitingForResponse]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -84,6 +120,10 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
 
   const handleSend = () => {
     if (!inputValue.trim() || isSending || isAITyping) return;
+    
+    // Set waiting for response immediately when user sends message
+    setIsWaitingForResponse(true);
+    
     sendMessage(inputValue.trim());
     setInputValue('');
     scrollToBottom(true);
@@ -339,6 +379,9 @@ export function ChatWindow({ targetPubkey, onToggleSidebar }: ChatWindowProps) {
                   />
                 );
               })}
+              
+              {/* Show thinking indicator when waiting for bot response */}
+              {isWaitingForResponse && !isAITyping && <ThinkingIndicator />}
             </div>
           ) : (
             // Empty state with capabilities and example prompts
