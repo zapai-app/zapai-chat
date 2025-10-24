@@ -378,30 +378,28 @@ function ConversationItem({
             </div>
           </Button>
           
-          {/* Action buttons - show on hover */}
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-sidebar pointer-events-none group-hover:pointer-events-auto">
-            <Button
-              size="sm"
-              variant="ghost"
+          {/* Action buttons - show on hover with clean gradient fade */}
+          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 onStartEdit(conversation);
               }}
-              className="h-7 w-7 p-0 hover:bg-sidebar-accent"
+              className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-sidebar-accent transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Edit session"
             >
               <Edit2 className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
+            </button>
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(conversation.id, conversation.eventId);
               }}
-              className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive"
+              className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
+              aria-label="Delete session"
             >
               <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            </button>
           </div>
         </div>
       )}

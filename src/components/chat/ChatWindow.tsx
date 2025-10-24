@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useSendMessage } from '@/hooks/useSendMessage';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -45,6 +46,7 @@ const AI_MODELS = [
 ] as const;
 
 export function ChatWindow({ targetPubkey, sessionId, onToggleSidebar }: ChatWindowProps) {
+  const navigate = useNavigate();
   const { user } = useCurrentUser();
   const author = useAuthor(user?.pubkey || '');
   const { data: messages, isLoading } = useChatMessages(targetPubkey, sessionId || undefined);
@@ -320,7 +322,7 @@ export function ChatWindow({ targetPubkey, sessionId, onToggleSidebar }: ChatWin
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
+                  <DropdownMenuItem onClick={() => navigate('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
