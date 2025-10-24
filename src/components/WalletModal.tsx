@@ -312,8 +312,8 @@ export function WalletModal({ children, className }: WalletModalProps) {
               </Button>
             )}
           </DrawerTrigger>
-          <DrawerContent className="h-full">
-            <DrawerHeader className="text-center relative">
+          <DrawerContent className="h-[90vh] flex flex-col">
+            <DrawerHeader className="text-center relative flex-shrink-0">
               <DrawerClose asChild>
                 <Button variant="ghost" size="sm" className="absolute right-4 top-4">
                   <X className="h-4 w-4" />
@@ -328,7 +328,7 @@ export function WalletModal({ children, className }: WalletModalProps) {
                 Connect your lightning wallet to send zaps instantly.
               </DrawerDescription>
             </DrawerHeader>
-            <div className="overflow-y-auto">
+            <div className="overflow-y-auto flex-1">
               <WalletContent {...walletContentProps} />
             </div>
           </DrawerContent>
@@ -374,7 +374,7 @@ export function WalletModal({ children, className }: WalletModalProps) {
             </Button>
           )}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5" />
@@ -384,7 +384,9 @@ export function WalletModal({ children, className }: WalletModalProps) {
               Connect your lightning wallet to send zaps instantly.
             </DialogDescription>
           </DialogHeader>
-          <WalletContent {...walletContentProps} />
+          <div className="overflow-y-auto flex-1">
+            <WalletContent {...walletContentProps} />
+          </div>
         </DialogContent>
       </Dialog>
       {addWalletDialog}

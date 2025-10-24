@@ -105,16 +105,48 @@ export function ChatWindow({ targetPubkey, onToggleSidebar, isSidebarOpen }: Cha
 
   if (!targetPubkey) {
     return (
-      <div className="h-full flex flex-col">
-        {/* Mobile Header with Login */}
-        <div className="md:hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-4 flex justify-end">
-          <LoginArea className="w-auto" />
+      <div className="h-full flex flex-col bg-background">
+        {/* Header with Sidebar Toggle and Login */}
+        <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
+          <div className="max-w-4xl mx-auto px-4 md:px-6 py-3 md:py-4">
+            <div className="flex items-center justify-between gap-3">
+              {/* Sidebar Toggle Button - Always visible */}
+              <button
+                onClick={onToggleSidebar}
+                className="p-2 -ml-2 hover:bg-accent rounded-lg transition-colors flex-shrink-0"
+                aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+              >
+                <svg className="h-6 w-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+
+              {/* Title */}
+              <div className="flex-1 min-w-0">
+                <h2 className="font-semibold text-sm md:text-base text-foreground">ZAI Chat</h2>
+              </div>
+
+              {/* Login Area */}
+              <div className="flex-shrink-0">
+                <LoginArea className="w-auto" />
+              </div>
+            </div>
+          </div>
         </div>
         
-        <div className="flex-1 flex items-center justify-center">
-          <Card className="p-8 text-center border-dashed">
-            <p className="text-muted-foreground">
-              No target account configured. Please set VITE_TARGET_PUBKEY in .env file.
+        {/* Center Content */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="p-6 md:p-8 text-center border-dashed max-w-md w-full">
+            <div className="mb-4">
+              <svg className="h-12 w-12 md:h-16 md:w-16 mx-auto text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-lg md:text-xl font-semibold mb-2 text-foreground">
+              Configuration Required
+            </h3>
+            <p className="text-sm md:text-base text-muted-foreground">
+              No target account configured. Please set VITE_TARGET_PUBKEY in your .env file.
             </p>
           </Card>
         </div>
@@ -124,17 +156,52 @@ export function ChatWindow({ targetPubkey, onToggleSidebar, isSidebarOpen }: Cha
 
   if (!user) {
     return (
-      <div className="h-full flex flex-col">
-        {/* Mobile Header with Login */}
-        <div className="md:hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-4 flex justify-end">
-          <LoginArea className="w-auto" />
+      <div className="h-full flex flex-col bg-background">
+        {/* Header with Sidebar Toggle and Login */}
+        <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
+          <div className="max-w-4xl mx-auto px-4 md:px-6 py-3 md:py-4">
+            <div className="flex items-center justify-between gap-3">
+              {/* Sidebar Toggle Button - Always visible */}
+              <button
+                onClick={onToggleSidebar}
+                className="p-2 -ml-2 hover:bg-accent rounded-lg transition-colors flex-shrink-0"
+                aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+              >
+                <svg className="h-6 w-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+
+              {/* Title */}
+              <div className="flex-1 min-w-0">
+                <h2 className="font-semibold text-sm md:text-base text-foreground">ZAI Chat</h2>
+              </div>
+
+              {/* Login Area */}
+              <div className="flex-shrink-0">
+                <LoginArea className="w-auto" />
+              </div>
+            </div>
+          </div>
         </div>
         
-        <div className="flex-1 flex items-center justify-center">
-          <Card className="p-8 text-center border-dashed">
-            <p className="text-muted-foreground">
-              Please log in to start chatting.
+        {/* Center Content */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="p-6 md:p-8 text-center border-dashed max-w-md w-full">
+            <div className="mb-4">
+              <svg className="h-12 w-12 md:h-16 md:w-16 mx-auto text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <h3 className="text-lg md:text-xl font-semibold mb-2 text-foreground">
+              Welcome to ZAI Chat
+            </h3>
+            <p className="text-sm md:text-base text-muted-foreground mb-4">
+              Please log in to start chatting with AI on Nostr.
             </p>
+            <div className="md:hidden mt-6">
+              <LoginArea className="w-full" />
+            </div>
           </Card>
         </div>
       </div>
@@ -146,11 +213,11 @@ export function ChatWindow({ targetPubkey, onToggleSidebar, isSidebarOpen }: Cha
       {/* Chat Header - Ultra-modern design */}
       <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-3 md:py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             {/* Sidebar Toggle Button - Always visible */}
             <button
               onClick={onToggleSidebar}
-              className="p-2 -ml-2 hover:bg-accent rounded-lg transition-colors"
+              className="p-2 -ml-2 hover:bg-accent rounded-lg transition-colors flex-shrink-0"
               aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
             >
               <svg className="h-6 w-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,6 +225,7 @@ export function ChatWindow({ targetPubkey, onToggleSidebar, isSidebarOpen }: Cha
               </svg>
             </button>
             
+            {/* User Info Section */}
             <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
               {author.isLoading ? (
                 <>
@@ -257,21 +325,21 @@ export function ChatWindow({ targetPubkey, onToggleSidebar, isSidebarOpen }: Cha
                               className="object-cover"
                             />
                           )}
-                          <AvatarFallback className="bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-white font-bold text-2xl md:text-3xl">
+                          <AvatarFallback className="bg-primary text-primary-foreground font-bold text-2xl md:text-3xl">
                             {displayName.slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       )}
                     </div>
-                    <h3 className="text-2xl md:text-3xl font-bold mb-3 text-white">
+                    <h3 className="text-2xl md:text-3xl font-bold mb-3 text-foreground">
                       Chat with {displayName}
                     </h3>
                     {about && (
-                      <p className="text-sm md:text-base text-gray-400 mb-4 max-w-lg mx-auto">
+                      <p className="text-sm md:text-base text-muted-foreground mb-4 max-w-lg mx-auto">
                         {about}
                       </p>
                     )}
-                    <div className="flex items-center justify-center gap-2 text-xs md:text-sm text-gray-500">
+                    <div className="flex items-center justify-center gap-2 text-xs md:text-sm text-muted-foreground">
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
@@ -287,7 +355,7 @@ export function ChatWindow({ targetPubkey, onToggleSidebar, isSidebarOpen }: Cha
       </ScrollArea>
 
       {/* Input Area - Sleek floating style */}
-      <div className="sticky bottom-0 border-t border-white/[0.08] bg-black/95 backdrop-blur-xl supports-[backdrop-filter]:bg-black/80">
+      <div className="sticky bottom-0 border-t border-border bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-3 md:py-4">
           <ChatInput
             onSend={handleSend}

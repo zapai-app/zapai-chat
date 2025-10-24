@@ -18,8 +18,8 @@ export function Wallet() {
   const [amount, setAmount] = useState('');
   const [copied, setCopied] = useState(false);
   
-  // Mock balance - در production باید از API بیاید
-  const balance = 0; // سرویس باید balance واقعی را برگرداند
+  // Mock balance - TODO: fetch from API in production
+  const balance = 0; // API should return actual balance
 
   const npub = user ? nip19.npubEncode(user.pubkey) : '';
 
@@ -42,8 +42,7 @@ export function Wallet() {
       return;
     }
 
-    // اینجا باید با API سرور ارتباط برقرار شود
-    // API باید یک Lightning invoice برگرداند
+    // TODO: Connect to server API to generate Lightning invoice
     toast({
       title: 'Coming soon',
       description: 'Lightning invoice generation will be implemented on the server side'

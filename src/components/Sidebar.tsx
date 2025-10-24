@@ -29,39 +29,43 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
     // Placeholder for future conversation history
   ]);
   
-  // Mock balance - در production باید از API بیاید
+  // Mock balance - TODO: fetch from API in production
   const balance = 0;
 
   return (
     <>
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-          onClick={onToggle}
-        />
-      )}
+      {/* Mobile Overlay with smooth fade */}
+      <div 
+        className={cn(
+          "md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-40",
+          "transition-opacity duration-300 ease-out",
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        onClick={onToggle}
+      />
 
-      {/* Sidebar */}
+      {/* Sidebar with professional animations */}
       <div className={cn(
         "fixed md:relative inset-y-0 left-0 z-50 h-full",
         "bg-sidebar border-r border-sidebar-border",
-        "transition-all duration-300 ease-in-out",
+        "transition-all duration-300 ease-out",
+        "will-change-transform",
         isOpen ? "w-[280px]" : "w-0 md:w-0 border-0",
-        // Mobile: slide in/out
+        // Mobile: slide in/out with smooth cubic-bezier
         "md:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
-        {/* Content wrapper - only visible when open */}
+        {/* Content wrapper with staggered fade-in */}
         <div className={cn(
           "flex flex-col h-full w-[280px]",
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          "transition-opacity duration-200 ease-out",
+          isOpen ? "opacity-100 delay-100" : "opacity-0 pointer-events-none"
         )}>
           {/* Header */}
           <div className="flex items-center justify-between px-3 py-3 border-b border-sidebar-border flex-shrink-0">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-sidebar-primary flex-shrink-0">
-                <Sparkles className="h-4 w-4 text-sidebar-primary-foreground" />
+              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-sidebar-primary flex-shrink-0 transition-transform duration-300 hover:scale-110 hover:rotate-12">
+                <Sparkles className="h-4 w-4 text-sidebar-primary-foreground animate-pulse" />
               </div>
               <h1 className="text-lg font-bold text-sidebar-foreground truncate">ZAI Chat</h1>
             </div>
@@ -70,25 +74,25 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
               variant="ghost"
               size="icon"
               onClick={onToggle}
-              className="h-10 w-10 hover:bg-sidebar-accent flex-shrink-0"
+              className="h-10 w-10 hover:bg-sidebar-accent flex-shrink-0 transition-all duration-200 ease-out hover:scale-110 active:scale-95"
               title="Close sidebar"
             >
-              <PanelLeftClose className="h-5 w-5" />
+              <PanelLeftClose className="h-5 w-5 transition-transform duration-200" />
             </Button>
           </div>
 
           {/* Sidebar content */}
           <div className="flex-1 flex flex-col min-h-0">
-          {/* New Chat button */}
+          {/* New Chat button with smooth hover animation */}
           <div className="p-3 border-b border-sidebar-border flex-shrink-0">
             <Button 
               onClick={() => {
                 if (onNewChat) onNewChat();
                 navigate('/');
               }}
-              className="w-full justify-start gap-3 h-11 rounded-lg bg-sidebar-accent hover:bg-sidebar-accent/80 border border-sidebar-border text-sidebar-foreground font-medium"
+              className="w-full justify-start gap-3 h-11 rounded-lg bg-sidebar-accent hover:bg-sidebar-accent/80 border border-sidebar-border text-sidebar-foreground font-medium transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98]"
             >
-              <Plus className="h-5 w-5" />
+              <Plus className="h-5 w-5 transition-transform duration-200 group-hover:rotate-90" />
               <span>New chat</span>
             </Button>
           </div>
@@ -124,20 +128,20 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
             )}
           </ScrollArea>
 
-          {/* Bottom Section */}
+          {/* Bottom Section with smooth transitions */}
           <div className="border-t border-sidebar-border p-3 space-y-2 flex-shrink-0">
             {/* Wallet Button - Only show if user is logged in */}
             {user && (
               <Button
                 variant="ghost"
                 onClick={() => navigate('/wallet')}
-                className="w-full justify-between gap-3 h-10 hover:bg-sidebar-accent text-sidebar-foreground"
+                className="w-full justify-between gap-3 h-10 hover:bg-sidebar-accent text-sidebar-foreground transition-all duration-200 ease-out hover:pl-4"
               >
                 <div className="flex items-center gap-3">
-                  <Wallet className="h-4 w-4" />
+                  <Wallet className="h-4 w-4 transition-transform duration-200 hover:scale-110" />
                   <span className="text-sm">Wallet</span>
                 </div>
-                <Badge variant="secondary" className="bg-primary/20 text-primary border-0">
+                <Badge variant="secondary" className="bg-primary/20 text-primary border-0 transition-all duration-200 hover:scale-105">
                   {balance.toLocaleString()} sats
                 </Badge>
               </Button>
@@ -146,9 +150,9 @@ export function Sidebar({ isOpen = true, onToggle, onNewChat }: SidebarProps) {
             <Button
               variant="ghost"
               onClick={() => navigate('/settings')}
-              className="w-full justify-start gap-3 h-10 hover:bg-sidebar-accent text-sidebar-foreground"
+              className="w-full justify-start gap-3 h-10 hover:bg-sidebar-accent text-sidebar-foreground transition-all duration-200 ease-out hover:pl-4"
             >
-              <Settings className="h-4 w-4" />
+              <Settings className="h-4 w-4 transition-transform duration-200 hover:rotate-90" />
               <span className="text-sm">Settings</span>
             </Button>
             
@@ -168,7 +172,7 @@ export function MobileMenuButton({ onClick }: { onClick: () => void }) {
       variant="ghost"
       size="icon"
       onClick={onClick}
-      className="md:hidden h-10 w-10 hover:bg-white/[0.08] text-white"
+      className="md:hidden h-10 w-10"
     >
       <Menu className="h-5 w-5" />
     </Button>

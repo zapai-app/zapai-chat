@@ -127,8 +127,8 @@ function NostrMention({ pubkey }: { pubkey: string }) {
       className={cn(
         "font-medium hover:underline",
         hasRealName 
-          ? "text-blue-500" 
-          : "text-gray-500 hover:text-gray-700"
+          ? "text-primary hover:text-primary/80" 
+          : "text-muted-foreground hover:text-foreground"
       )}
     >
       @{displayName}
