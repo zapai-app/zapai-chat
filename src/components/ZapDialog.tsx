@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/useToast';
 import { useZaps } from '@/hooks/useZaps';
 import { useWallet } from '@/hooks/useWallet';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useBalance } from '@/hooks/useBalance';
 import type { Event } from 'nostr-tools';
 import QRCode from 'qrcode';
 import type { WebLNProvider } from "@webbtc/webln-types";
@@ -247,10 +248,12 @@ export function ZapDialog({ target, targetPubkey, children, className }: ZapDial
   const { toast } = useToast();
   const { webln, activeNWC } = useWallet();
   const { zap, isZapping, invoice, setInvoice } = useZaps(target, webln, activeNWC, () => setOpen(false), recipientPubkey);
+  const { data: balanceData } = useBalance();
   const [amount, setAmount] = useState<number | string>(100);
   const [comment, setComment] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [lastBalance, setLastBalance] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
@@ -259,6 +262,44 @@ export function ZapDialog({ target, targetPubkey, children, className }: ZapDial
       setComment('Zapped with ZAI!');
     }
   }, [target, targetPubkey]);
+
+  // Watch for balance changes when invoice is displayed
+  useEffect(() => {
+    // Only track balance changes when:
+    // 1. Dialog is open
+    // 2. Invoice is displayed (waiting for payment)
+    // 3. User is logged in
+    if (!open || !invoice || !user) {
+      setLastBalance(null);
+      return;
+    }
+
+    const currentBalance = balanceData?.totalSats ?? 0;
+
+    // Set initial balance when invoice is first shown
+    if (lastBalance === null) {
+      setLastBalance(currentBalance);
+      return;
+    }
+
+    // If balance increased, payment was successful - close the dialog
+    if (currentBalance > lastBalance) {
+      console.log('💰 Balance increased! Closing zap dialog...');
+      
+      toast({
+        title: 'Payment confirmed!',
+        description: `Your balance increased by ${currentBalance - lastBalance} sats.`,
+      });
+
+      // Close dialog
+      setOpen(false);
+      
+      // Reset states
+      setInvoice(null);
+      setQrCodeUrl('');
+      setLastBalance(null);
+    }
+  }, [open, invoice, user, balanceData, lastBalance, toast, setInvoice]);
 
   // Generate QR code
   useEffect(() => {

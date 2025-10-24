@@ -251,10 +251,6 @@ export function useZaps(
               try {
                 await sendPayment(currentNWCConnection, newInvoice);
 
-                // Clear states immediately on success
-                setIsZapping(false);
-                setInvoice(null);
-
                 toast({
                   title: 'Zap successful!',
                   description: `You sent ${amount} sats via NWC to the author.`,
@@ -263,8 +259,13 @@ export function useZaps(
                 // Invalidate zap queries to refresh counts
                 queryClient.invalidateQueries({ queryKey: ['zaps'] });
 
-                // Close dialog last to ensure clean state
+                // Call success callback first
                 onZapSuccess?.();
+
+                // Then clear states
+                setIsZapping(false);
+                setInvoice(null);
+
                 return;
               } catch (nwcError) {
                 console.error('NWC payment failed, falling back:', nwcError);
@@ -295,10 +296,6 @@ export function useZaps(
 
                 await webLnProvider.sendPayment(newInvoice);
 
-                // Clear states immediately on success
-                setIsZapping(false);
-                setInvoice(null);
-
                 toast({
                   title: 'Zap successful!',
                   description: `You sent ${amount} sats to the author.`,
@@ -307,8 +304,12 @@ export function useZaps(
                 // Invalidate zap queries to refresh counts
                 queryClient.invalidateQueries({ queryKey: ['zaps'] });
 
-                // Close dialog last to ensure clean state
+                // Call success callback first
                 onZapSuccess?.();
+
+                // Then clear states
+                setIsZapping(false);
+                setInvoice(null);
               } catch (weblnError) {
                 console.error('WebLN payment failed, falling back:', weblnError);
 
