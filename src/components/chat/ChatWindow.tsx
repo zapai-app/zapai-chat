@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Bot, User, StopCircle, Settings, Moon, Sun, LogOut, ChevronDown, Check } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MessageItem } from '@/components/chat/MessageItem';
+import { MessageItem, type MessageItemRef } from '@/components/chat/MessageItem';
 import { ThinkingIndicator } from '@/components/chat/ThinkingIndicator';
 import { genUserName } from '@/lib/genUserName';
 
@@ -65,6 +65,7 @@ export function ChatWindow({ targetPubkey, sessionId, onToggleSidebar }: ChatWin
   const [isAITyping, setIsAITyping] = useState(false);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const previousMessageCountRef = useRef(0);
+  const lastMessageRef = useRef<MessageItemRef>(null);
 
   // Helper function for scrolling to bottom
   const scrollToBottom = (smooth = true) => {
@@ -145,6 +146,16 @@ export function ChatWindow({ targetPubkey, sessionId, onToggleSidebar }: ChatWin
   const handleExampleClick = (prompt: string) => {
     setInputValue(prompt);
     textareaRef.current?.focus();
+  };
+
+  const handleStop = () => {
+    // Stop the typing animation immediately
+    if (lastMessageRef.current) {
+      lastMessageRef.current.stopTyping();
+    }
+    // Reset states
+    setIsAITyping(false);
+    setIsWaitingForResponse(false);
   };
 
   if (!targetPubkey) {
@@ -372,6 +383,7 @@ export function ChatWindow({ targetPubkey, sessionId, onToggleSidebar }: ChatWin
                 return (
                   <MessageItem
                     key={event.id}
+                    ref={isLast && !isUser ? lastMessageRef : null}
                     event={event}
                     isUser={isUser}
                     isLast={isLast}
@@ -477,12 +489,13 @@ export function ChatWindow({ targetPubkey, sessionId, onToggleSidebar }: ChatWin
                 className="flex-1 bg-transparent resize-none outline-none max-h-[200px] text-sm placeholder:text-muted-foreground disabled:opacity-50"
               />
               
-              {isSending || isAITyping ? (
+              {isSending || isAITyping || isWaitingForResponse ? (
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => {/* TODO: Stop generation */}}
-                  className="flex-shrink-0 h-8 w-8 p-0 rounded-lg"
+                  onClick={handleStop}
+                  className="flex-shrink-0 h-9 w-9 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  title="Stop generating"
                 >
                   <StopCircle className="h-5 w-5" />
                 </Button>
