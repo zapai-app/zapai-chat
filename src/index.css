@@ -133,6 +133,12 @@
   color: inherit !important;
 }
 
+.prose p {
+  color: inherit !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
 .prose strong {
   color: inherit !important;
   font-weight: 700 !important;
@@ -145,6 +151,26 @@
 .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
   color: inherit !important;
   font-weight: 700 !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.prose h1:first-child, .prose h2:first-child, .prose h3:first-child,
+.prose h4:first-child, .prose h5:first-child, .prose h6:first-child {
+  margin-top: 0 !important;
+}
+
+.prose ul, .prose ol {
+  color: inherit !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  padding-left: 1.5rem !important;
+}
+
+.prose li {
+  color: inherit !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .prose a {
@@ -172,6 +198,8 @@
   background-color: rgba(0, 0, 0, 0.05) !important;
   border-radius: 0.5rem !important;
   padding: 0.75rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
 }
 
 .dark .prose pre {
@@ -183,20 +211,15 @@
   padding: 0 !important;
 }
 
-.prose ul, .prose ol {
-  color: inherit !important;
-}
-
-.prose li {
-  color: inherit !important;
-}
-
 .prose blockquote {
   color: inherit !important;
   border-left-color: currentColor !important;
   opacity: 0.8;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
 }
 
-.prose p {
-  color: inherit !important;
+.prose hr {
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
 }

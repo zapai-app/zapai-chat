@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
 import { type NostrEvent } from '@nostrify/nostrify';
 import { Link } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useAuthor } from '@/hooks/useAuthor';
 import { genUserName } from '@/lib/genUserName';
 import { cn } from '@/lib/utils';
@@ -11,105 +12,58 @@ interface NoteContentProps {
   className?: string;
 }
 
-/** Parses content of text note events so that URLs and hashtags are linkified. */
+/** Parses content of text note events so that URLs and hashtags are linkified, and markdown is rendered. */
 export function NoteContent({
   event, 
   className, 
 }: NoteContentProps) {  
-  // Process the content to render mentions, links, etc.
-  const content = useMemo(() => {
-    const text = event.content;
-    
-    // Regex to find URLs, Nostr references, and hashtags
-    const regex = /(https?:\/\/[^\s]+)|nostr:(npub1|note1|nprofile1|nevent1)([023456789acdefghjklmnpqrstuvwxyz]+)|(#\w+)/g;
-    
-    const parts: React.ReactNode[] = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-    let keyCounter = 0;
-    
-    while ((match = regex.exec(text)) !== null) {
-      const [fullMatch, url, nostrPrefix, nostrData, hashtag] = match;
-      const index = match.index;
-      
-      // Add text before this match
-      if (index > lastIndex) {
-        parts.push(text.substring(lastIndex, index));
-      }
-      
-      if (url) {
-        // Handle URLs
-        parts.push(
-          <a 
-            key={`url-${keyCounter++}`}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 hover:underline"
-          >
-            {url}
-          </a>
-        );
-      } else if (nostrPrefix && nostrData) {
-        // Handle Nostr references
-        try {
-          const nostrId = `${nostrPrefix}${nostrData}`;
-          const decoded = nip19.decode(nostrId);
-          
-          if (decoded.type === 'npub') {
-            const pubkey = decoded.data;
-            parts.push(
-              <NostrMention key={`mention-${keyCounter++}`} pubkey={pubkey} />
-            );
-          } else {
-            // For other types, just show as a link
-            parts.push(
-              <Link 
-                key={`nostr-${keyCounter++}`}
-                to={`/${nostrId}`}
-                className="text-blue-500 hover:underline"
-              >
-                {fullMatch}
-              </Link>
-            );
-          }
-        } catch {
-          // If decoding fails, just render as text
-          parts.push(fullMatch);
-        }
-      } else if (hashtag) {
-        // Handle hashtags
-        const tag = hashtag.slice(1); // Remove the #
-        parts.push(
-          <Link 
-            key={`hashtag-${keyCounter++}`}
-            to={`/t/${tag}`}
-            className="text-blue-500 hover:underline"
-          >
-            {hashtag}
-          </Link>
-        );
-      }
-      
-      lastIndex = index + fullMatch.length;
-    }
-    
-    // Add any remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
-    }
-    
-    // If no special content was found, just use the plain text
-    if (parts.length === 0) {
-      parts.push(text);
-    }
-    
-    return parts;
-  }, [event]);
+  const text = event.content;
 
   return (
     <div className={cn("whitespace-pre-wrap break-words", className)}>
-      {content.length > 0 ? content : event.content}
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: ({ href, children }) => {
+            // Check if it's a Nostr reference
+            if (href?.startsWith('nostr:')) {
+              try {
+                const nostrId = href.replace('nostr:', '');
+                const decoded = nip19.decode(nostrId);
+                
+                if (decoded.type === 'npub') {
+                  return <NostrMention pubkey={decoded.data} />;
+                } else {
+                  return (
+                    <Link 
+                      to={`/${nostrId}`}
+                      className="text-blue-500 hover:underline"
+                    >
+                      {children}
+                    </Link>
+                  );
+                }
+              } catch {
+                return <span>{children}</span>;
+              }
+            }
+            
+            // Regular link
+            return (
+              <a 
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline break-all"
+              >
+                {children}
+              </a>
+            );
+          },
+        }}
+      >
+        {text}
+      </ReactMarkdown>
     </div>
   );
 }
