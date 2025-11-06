@@ -17,12 +17,16 @@ export interface ReceivedZap {
 /**
  * Hook to fetch all zap receipts received by a specific pubkey
  * Extracts sender information from the description tag
+ * If senderPubkey is provided, filters to show only zaps from that sender
  */
-export function useReceivedZaps(recipientPubkey: string | null | undefined) {
+export function useReceivedZaps(
+  recipientPubkey: string | null | undefined,
+  senderPubkey?: string | null | undefined
+) {
   const { nostr } = useNostr();
 
   const { data: zapReceipts, ...query } = useQuery<NostrEvent[], Error>({
-    queryKey: ['received-zaps', recipientPubkey],
+    queryKey: ['received-zaps', recipientPubkey, senderPubkey],
     enabled: !!recipientPubkey,
     staleTime: 30000, // 30 seconds
     refetchInterval: 60000, // Refetch every minute
@@ -73,7 +77,7 @@ export function useReceivedZaps(recipientPubkey: string | null | undefined) {
         }
 
         let zapRequest: NostrEvent | null = null;
-        let senderPubkey = '';
+        let extractedSenderPubkey = '';
         let comment = '';
         let amount = 0;
 
@@ -82,7 +86,7 @@ export function useReceivedZaps(recipientPubkey: string | null | undefined) {
           zapRequest = JSON.parse(descriptionTag) as NostrEvent;
           
           // Extract sender pubkey
-          senderPubkey = zapRequest.pubkey;
+          extractedSenderPubkey = zapRequest.pubkey;
 
           // Extract comment if present
           comment = zapRequest.content || '';
@@ -107,14 +111,19 @@ export function useReceivedZaps(recipientPubkey: string | null | undefined) {
         }
 
         // If we still don't have sender pubkey, skip this zap
-        if (!senderPubkey) {
+        if (!extractedSenderPubkey) {
           console.warn('Could not extract sender pubkey from zap receipt:', receipt.id);
+          continue;
+        }
+
+        // Filter by sender pubkey if provided
+        if (senderPubkey && extractedSenderPubkey !== senderPubkey) {
           continue;
         }
 
         zaps.push({
           id: receipt.id,
-          senderPubkey,
+          senderPubkey: extractedSenderPubkey,
           amount,
           comment,
           timestamp: receipt.created_at,
@@ -127,7 +136,7 @@ export function useReceivedZaps(recipientPubkey: string | null | undefined) {
     }
 
     return zaps;
-  }, [zapReceipts]);
+  }, [zapReceipts, senderPubkey]);
 
   // Calculate totals
   const totals = useMemo(() => {

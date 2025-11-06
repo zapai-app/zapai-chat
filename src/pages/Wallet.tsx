@@ -49,8 +49,11 @@ export function Wallet() {
   const { data: balanceData, isLoading: isLoadingBalance, refetch: refetchBalance } = useBalance();
   const balance = balanceData?.totalSats ?? 0;
 
-  // Fetch all zap receipts sent to the bot
-  const { zaps, totals, isLoading: isLoadingZaps, refetch: refetchZaps } = useReceivedZaps(botPubkey);
+  // Fetch only the current user's zap receipts sent to the bot
+  const { zaps, totals, isLoading: isLoadingZaps, refetch: refetchZaps } = useReceivedZaps(
+    botPubkey,
+    user?.pubkey // Filter by current user's pubkey
+  );
 
   // Fetch bot's profile
   const botAuthor = useAuthor(botPubkey || undefined);
