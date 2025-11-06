@@ -127,3 +127,76 @@
     background-color: rgba(255, 255, 255, 0.3);
   }
 }
+
+/* Custom styles for chat message markdown */
+.prose {
+  color: inherit !important;
+}
+
+.prose strong {
+  color: inherit !important;
+  font-weight: 700 !important;
+}
+
+.prose em {
+  color: inherit !important;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  color: inherit !important;
+  font-weight: 700 !important;
+}
+
+.prose a {
+  color: rgb(59 130 246) !important;
+  text-decoration: underline !important;
+}
+
+.dark .prose a {
+  color: rgb(96 165 250) !important;
+}
+
+.prose code {
+  color: inherit !important;
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  padding: 0.125rem 0.375rem !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.875em !important;
+}
+
+.dark .prose code {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.prose pre {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.75rem !important;
+}
+
+.dark .prose pre {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.prose pre code {
+  background-color: transparent !important;
+  padding: 0 !important;
+}
+
+.prose ul, .prose ol {
+  color: inherit !important;
+}
+
+.prose li {
+  color: inherit !important;
+}
+
+.prose blockquote {
+  color: inherit !important;
+  border-left-color: currentColor !important;
+  opacity: 0.8;
+}
+
+.prose p {
+  color: inherit !important;
+}

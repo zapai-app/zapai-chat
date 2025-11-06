@@ -49,11 +49,25 @@ export function Wallet() {
   const { data: balanceData, isLoading: isLoadingBalance, refetch: refetchBalance } = useBalance();
   const balance = balanceData?.totalSats ?? 0;
 
-  // Fetch only the current user's zap receipts sent to the bot
-  const { zaps, totals, isLoading: isLoadingZaps, refetch: refetchZaps } = useReceivedZaps(
-    botPubkey,
-    user?.pubkey // Filter by current user's pubkey
-  );
+  // Fetch all zap receipts sent to the bot
+  const { zaps: allZaps, isLoading: isLoadingZaps, refetch: refetchZaps } = useReceivedZaps(botPubkey);
+
+  // Filter zaps to only show the current user's deposits
+  const zaps = useMemo(() => {
+    return allZaps.filter(zap => zap.senderPubkey === user?.pubkey);
+  }, [allZaps, user?.pubkey]);
+
+  // Calculate totals for current user only
+  const totals = useMemo(() => {
+    const totalSats = zaps.reduce((sum, zap) => sum + zap.amount, 0);
+    const zapCount = zaps.length;
+    
+    return {
+      totalSats,
+      zapCount,
+      uniqueSenders: 1, // Always 1 since it's only the current user
+    };
+  }, [zaps]);
 
   // Fetch bot's profile
   const botAuthor = useAuthor(botPubkey || undefined);
@@ -221,7 +235,9 @@ export function Wallet() {
                     <ZapButton 
                       target={null}
                       targetPubkey={botPubkey}
-                      className="w-full max-w-sm h-12 text-base font-semibold"
+                      variant="default"
+                      size="lg"
+                      className="w-full max-w-sm"
                       showCount={false}
                     />
                   </div>
@@ -286,7 +302,7 @@ export function Wallet() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Total Zaps</p>
+                  <p className="text-sm font-medium text-muted-foreground">Your Zaps</p>
                   <div className="text-2xl font-bold">
                     {isLoadingZaps ? <Skeleton className="h-8 w-16" /> : totals.zapCount}
                   </div>
@@ -302,7 +318,7 @@ export function Wallet() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Total Received</p>
+                  <p className="text-sm font-medium text-muted-foreground">You Sent</p>
                   <div className="text-2xl font-bold">
                     {isLoadingZaps ? <Skeleton className="h-8 w-24" /> : `${totals.totalSats.toLocaleString()}`}
                   </div>
@@ -319,9 +335,9 @@ export function Wallet() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Unique Senders</p>
+                  <p className="text-sm font-medium text-muted-foreground">Deposits</p>
                   <div className="text-2xl font-bold">
-                    {isLoadingZaps ? <Skeleton className="h-8 w-16" /> : totals.uniqueSenders}
+                    {isLoadingZaps ? <Skeleton className="h-8 w-16" /> : totals.zapCount}
                   </div>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -342,7 +358,7 @@ export function Wallet() {
                 </div>
                 <div>
                   <CardTitle>Payment History</CardTitle>
-                  <CardDescription>All Lightning payments you sent to charge your account</CardDescription>
+                  <CardDescription>Your Lightning payments to charge your account</CardDescription>
                 </div>
               </div>
               <Button
@@ -381,7 +397,7 @@ export function Wallet() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  No zaps received yet. Send a zap to the bot to charge your account.
+                  You haven't sent any zaps yet. Send a zap to charge your account.
                 </p>
               </div>
             )}

@@ -3,8 +3,10 @@ import { useZaps } from '@/hooks/useZaps';
 import { useWallet } from '@/hooks/useWallet';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
+import { Button } from '@/components/ui/button';
 import { Zap } from 'lucide-react';
 import type { Event } from 'nostr-tools';
+import type { ButtonProps } from '@/components/ui/button';
 
 interface ZapButtonProps {
   target: Event | null;
@@ -12,14 +14,18 @@ interface ZapButtonProps {
   className?: string;
   showCount?: boolean;
   zapData?: { count: number; totalSats: number; isLoading?: boolean };
+  variant?: ButtonProps['variant'];
+  size?: ButtonProps['size'];
 }
 
 export function ZapButton({
   target,
   targetPubkey,
-  className = "text-xs ml-1",
+  className,
   showCount = true,
-  zapData: externalZapData
+  zapData: externalZapData,
+  variant = "ghost",
+  size = "sm"
 }: ZapButtonProps) {
   const { user } = useCurrentUser();
   
@@ -48,18 +54,16 @@ export function ZapButton({
 
   return (
     <ZapDialog target={target} targetPubkey={targetPubkey}>
-      <div className={`flex items-center gap-1 ${className}`}>
+      <Button variant={variant} size={size} className={className}>
         <Zap className="h-4 w-4" />
-        <span className="text-xs">
-          {showLoading ? (
-            '...'
-          ) : showCount && totalSats > 0 ? (
-            `${totalSats.toLocaleString()}`
-          ) : (
-            'Zap'
-          )}
-        </span>
-      </div>
+        {showLoading ? (
+          '...'
+        ) : showCount && totalSats > 0 ? (
+          `${totalSats.toLocaleString()}`
+        ) : (
+          'Zap'
+        )}
+      </Button>
     </ZapDialog>
   );
 }

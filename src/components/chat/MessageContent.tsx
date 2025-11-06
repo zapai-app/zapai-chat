@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ExternalLink } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface MessageContentProps {
   content: string;
@@ -37,15 +38,37 @@ export function MessageContent({ content, className }: MessageContentProps) {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const urls = extractUrls(content);
   
-  // Separate URLs by type
-  const images = urls.filter(({ url }) => isImageUrl(url) && !imageErrors.has(url));
-  const videos = urls.filter(({ url }) => isVideoUrl(url));
-  const links = urls.filter(({ url }) => !isImageUrl(url) && !isVideoUrl(url));
+  // Separate URLs by type (images and videos in their own lines)
+  const standaloneImages = urls.filter(({ url, start }) => {
+    // Check if URL is on its own line
+    const beforeChar = start > 0 ? content[start - 1] : '\n';
+    const afterChar = content[start + url.length] || '\n';
+    return isImageUrl(url) && !imageErrors.has(url) && (beforeChar === '\n' || start === 0) && (afterChar === '\n' || afterChar === undefined);
+  });
   
-  // Remove URLs from text content
+  const standaloneVideos = urls.filter(({ url, start }) => {
+    const beforeChar = start > 0 ? content[start - 1] : '\n';
+    const afterChar = content[start + url.length] || '\n';
+    return isVideoUrl(url) && (beforeChar === '\n' || start === 0) && (afterChar === '\n' || afterChar === undefined);
+  });
+  
+  // Remove standalone media URLs from text content
   let textContent = content;
-  [...urls].reverse().forEach(({ start, end }) => {
-    textContent = textContent.slice(0, start) + textContent.slice(end);
+  [...standaloneImages, ...standaloneVideos].reverse().forEach(({ start, end }) => {
+    // Remove the URL and any surrounding newlines
+    let removeStart = start;
+    let removeEnd = end;
+    
+    // Remove preceding newline if exists
+    if (removeStart > 0 && textContent[removeStart - 1] === '\n') {
+      removeStart--;
+    }
+    // Remove following newline if exists
+    if (removeEnd < textContent.length && textContent[removeEnd] === '\n') {
+      removeEnd++;
+    }
+    
+    textContent = textContent.slice(0, removeStart) + textContent.slice(removeEnd);
   });
   textContent = textContent.trim();
   
@@ -55,17 +78,19 @@ export function MessageContent({ content, className }: MessageContentProps) {
 
   return (
     <div className={className}>
-      {/* Text content */}
+      {/* Markdown text content */}
       {textContent && (
-        <div className="whitespace-pre-wrap break-words">
-          {textContent}
+        <div className="prose prose-sm dark:prose-invert max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {textContent}
+          </ReactMarkdown>
         </div>
       )}
       
-      {/* Images */}
-      {images.length > 0 && (
+      {/* Standalone Images */}
+      {standaloneImages.length > 0 && (
         <div className={`flex flex-col gap-2 ${textContent ? 'mt-2' : ''}`}>
-          {images.map(({ url }, index) => (
+          {standaloneImages.map(({ url }, index) => (
             <a
               key={index}
               href={url}
@@ -85,10 +110,10 @@ export function MessageContent({ content, className }: MessageContentProps) {
         </div>
       )}
       
-      {/* Videos */}
-      {videos.length > 0 && (
-        <div className={`flex flex-col gap-2 ${textContent || images.length > 0 ? 'mt-2' : ''}`}>
-          {videos.map(({ url }, index) => (
+      {/* Standalone Videos */}
+      {standaloneVideos.length > 0 && (
+        <div className={`flex flex-col gap-2 ${textContent || standaloneImages.length > 0 ? 'mt-2' : ''}`}>
+          {standaloneVideos.map(({ url }, index) => (
             <video
               key={index}
               src={url}
@@ -98,24 +123,6 @@ export function MessageContent({ content, className }: MessageContentProps) {
             >
               Your browser does not support the video tag.
             </video>
-          ))}
-        </div>
-      )}
-      
-      {/* Links */}
-      {links.length > 0 && (
-        <div className={`flex flex-col gap-1 ${textContent || images.length > 0 || videos.length > 0 ? 'mt-2' : ''}`}>
-          {links.map(({ url }, index) => (
-            <a
-              key={index}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline break-all"
-            >
-              <ExternalLink className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{url}</span>
-            </a>
           ))}
         </div>
       )}
