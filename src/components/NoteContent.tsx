@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { useAuthor } from '@/hooks/useAuthor';
 import { genUserName } from '@/lib/genUserName';
 import { cn } from '@/lib/utils';
@@ -22,8 +23,9 @@ export function NoteContent({
   return (
     <div className={cn("whitespace-pre-wrap break-words", className)}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
+          p: ({ children }) => <>{children}</>,
           a: ({ href, children }) => {
             // Check if it's a Nostr reference
             if (href?.startsWith('nostr:')) {
