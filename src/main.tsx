@@ -3,11 +3,12 @@ import { createRoot } from 'react-dom/client';
 // Import polyfills first
 import './lib/polyfills.ts';
 
+// Import modern fonts
+import '@fontsource-variable/inter';
+
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import App from './App.tsx';
 import './index.css';
-
-// TODO: add custom fonts as needed
 // Example: import '@fontsource-variable/inter';
 
 createRoot(document.getElementById("root")!).render(

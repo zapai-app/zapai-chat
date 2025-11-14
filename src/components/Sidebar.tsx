@@ -14,8 +14,27 @@ import {
   Edit2,
   Check,
   X,
-  Wallet
+  Wallet,
+  Archive,
+  Star,
+  Download,
+  Share2,
+  MoreHorizontal,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -56,6 +75,10 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [todayOpen, setTodayOpen] = useState(true);
+  const [yesterdayOpen, setYesterdayOpen] = useState(true);
+  const [thisWeekOpen, setThisWeekOpen] = useState(true);
+  const [olderOpen, setOlderOpen] = useState(false);
   
   // Get balance from real-time subscription
   const balance = balanceData?.totalSats ?? 0;
@@ -93,16 +116,31 @@ export function Sidebar({
     c.preview?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Group conversations by time
+  // Group conversations by time with improved logic
+  const now = Date.now();
+  const oneDay = 86400000;
+  const oneWeek = 604800000;
+  const oneMonth = 2592000000;
+
   const today = filteredConversations.filter(c => 
-    Date.now() - c.timestamp < 86400000
-  );
+    now - c.timestamp < oneDay
+  ).sort((a, b) => b.timestamp - a.timestamp);
+  
   const yesterday = filteredConversations.filter(c => 
-    Date.now() - c.timestamp >= 86400000 && Date.now() - c.timestamp < 172800000
-  );
+    now - c.timestamp >= oneDay && now - c.timestamp < 2 * oneDay
+  ).sort((a, b) => b.timestamp - a.timestamp);
+  
+  const thisWeek = filteredConversations.filter(c => 
+    now - c.timestamp >= 2 * oneDay && now - c.timestamp < oneWeek
+  ).sort((a, b) => b.timestamp - a.timestamp);
+  
+  const thisMonth = filteredConversations.filter(c => 
+    now - c.timestamp >= oneWeek && now - c.timestamp < oneMonth
+  ).sort((a, b) => b.timestamp - a.timestamp);
+  
   const older = filteredConversations.filter(c => 
-    Date.now() - c.timestamp >= 172800000
-  );
+    now - c.timestamp >= oneMonth
+  ).sort((a, b) => b.timestamp - a.timestamp);
 
   return (
     <>
@@ -132,51 +170,54 @@ export function Sidebar({
           "transition-opacity duration-200 ease-out",
           isOpen ? "opacity-100 delay-100" : "opacity-0 pointer-events-none"
         )}>
-          {/* Header */}
-          <div className="flex items-center justify-between px-3 py-3 border-b border-sidebar-border flex-shrink-0">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 transition-transform duration-300 hover:scale-110">
-                <Bot className="h-4 w-4 text-white" />
+          {/* Professional Header */}
+          <div className="flex items-center justify-between px-4 py-4 border-b border-sidebar-border flex-shrink-0">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex-shrink-0">
+                <Bot className="h-5 w-5 text-white" />
               </div>
-              <h1 className="text-lg font-bold text-sidebar-foreground truncate">ZAI</h1>
+              <div className="flex flex-col">
+                <h1 className="text-lg font-semibold text-sidebar-foreground truncate">ZAI</h1>
+                <p className="text-xs text-sidebar-foreground/60">AI Assistant</p>
+              </div>
             </div>
             
             <Button
               variant="ghost"
               size="icon"
               onClick={onToggle}
-              className="h-10 w-10 hover:bg-sidebar-accent flex-shrink-0 transition-all duration-200 ease-out hover:scale-110 active:scale-95"
+              className="h-10 w-10 hover:bg-sidebar-accent flex-shrink-0 transition-colors rounded-lg"
               title="Close sidebar"
             >
-              <PanelLeftClose className="h-5 w-5 transition-transform duration-200" />
+              <PanelLeftClose className="h-5 w-5" />
             </Button>
           </div>
 
           {/* Sidebar content */}
           <div className="flex-1 flex flex-col min-h-0">
-            {/* New Chat button */}
-            <div className="p-3 border-b border-sidebar-border flex-shrink-0">
+            {/* Professional New Chat Button */}
+            <div className="p-4 flex-shrink-0">
               <Button 
                 onClick={() => {
                   if (onNewChat) onNewChat();
                   navigate('/');
                 }}
-                className="w-full justify-start gap-3 h-11 rounded-lg bg-sidebar-accent hover:bg-sidebar-accent/80 border border-sidebar-border text-sidebar-foreground font-medium transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full justify-start gap-3 h-11 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors border-0"
               >
-                <Plus className="h-5 w-5" />
-                <span>New chat</span>
+                <Plus className="h-4 w-4" />
+                <span>New Chat</span>
               </Button>
             </div>
 
             {/* Search Bar */}
-            <div className="p-3 flex-shrink-0">
+            <div className="px-4 pb-4 flex-shrink-0">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/50" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search conversations..."
-                  className="pl-9 h-9 bg-sidebar-accent border-sidebar-border"
+                  className="pl-10 h-9 bg-sidebar-accent border-sidebar-border rounded-lg focus:ring-1 focus:ring-primary/30"
                 />
               </div>
             </div>
@@ -184,118 +225,238 @@ export function Sidebar({
             {/* Conversations List */}
             <ScrollArea className="flex-1 px-3">
               {sessionsLoading ? (
-                <div className="py-2 space-y-2">
-                  <div className="h-12 bg-sidebar-accent rounded-lg animate-pulse" />
-                  <div className="h-12 bg-sidebar-accent rounded-lg animate-pulse" />
-                  <div className="h-12 bg-sidebar-accent rounded-lg animate-pulse" />
+                <div className="py-4 space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="px-3">
+                      <div className="flex gap-3 items-start">
+                        <div className="h-8 w-8 bg-sidebar-accent/50 rounded-lg animate-pulse flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3 bg-sidebar-accent/50 rounded animate-pulse w-3/4" />
+                          <div className="h-2 bg-sidebar-accent/30 rounded animate-pulse w-1/2" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : filteredConversations.length === 0 ? (
-                <div className="py-8 text-center">
-                  <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    {searchQuery ? 'No conversations found' : 'No conversations yet'}
+                <div className="py-12 text-center px-4">
+                  <div className="inline-flex h-16 w-16 rounded-2xl bg-gradient-to-br from-sidebar-accent to-sidebar-accent/50 items-center justify-center mb-4 shadow-sm">
+                    <MessageSquare className="h-8 w-8 text-sidebar-foreground/50" />
+                  </div>
+                  <h3 className="font-semibold text-sidebar-foreground mb-2">
+                    {searchQuery ? 'No matches found' : 'No conversations yet'}
+                  </h3>
+                  <p className="text-sm text-sidebar-foreground/60 leading-relaxed max-w-xs mx-auto">
+                    {searchQuery ? 'Try adjusting your search terms or browse all conversations' : 'Start your first conversation with ZAI to see it appear here'}
                   </p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    {searchQuery ? 'Try a different search' : 'Start a new chat to begin'}
-                  </p>
+                  {!searchQuery && (
+                    <div className="mt-4">
+                      <Button
+                        onClick={() => onNewChat?.()}
+                        size="sm"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Start Chatting
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="space-y-6 py-2">
-                  {/* Today */}
+                <div className="space-y-4 py-2">
+                  {/* Today - Always expanded */}
                   {today.length > 0 && (
-                    <div className="space-y-1">
-                      <h3 className="text-xs font-semibold text-muted-foreground px-3 mb-2">Today</h3>
-                      {today.map((conv) => (
-                        <ConversationItem
-                          key={conv.id}
-                          conversation={conv}
-                          isActive={activeSessionId === conv.id}
-                          isEditing={editingId === conv.id}
-                          editTitle={editTitle}
-                          setEditTitle={setEditTitle}
-                          onStartEdit={handleStartEdit}
-                          onSaveEdit={handleSaveEdit}
-                          onCancelEdit={handleCancelEdit}
-                          onDelete={handleDeleteConversation}
-                          onClick={() => onSessionSelect?.(conv.id)}
-                        />
-                      ))}
-                    </div>
+                    <Collapsible open={todayOpen} onOpenChange={setTodayOpen}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 hover:bg-sidebar-accent/50 rounded-lg group transition-colors">
+                        <h3 className="text-xs font-semibold text-sidebar-foreground/70 group-hover:text-sidebar-foreground">Today</h3>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-sidebar-accent/50 text-sidebar-foreground/60">
+                            {today.length}
+                          </Badge>
+                          <ChevronDown className={cn("h-4 w-4 text-sidebar-foreground/50 transition-transform", todayOpen && "rotate-180")} />
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-1 mt-2">
+                        {today.map((conv) => (
+                          <ConversationItem
+                            key={conv.id}
+                            conversation={conv}
+                            isActive={activeSessionId === conv.id}
+                            isEditing={editingId === conv.id}
+                            editTitle={editTitle}
+                            setEditTitle={setEditTitle}
+                            onStartEdit={handleStartEdit}
+                            onSaveEdit={handleSaveEdit}
+                            onCancelEdit={handleCancelEdit}
+                            onDelete={handleDeleteConversation}
+                            onClick={() => onSessionSelect?.(conv.id)}
+                          />
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
 
                   {/* Yesterday */}
                   {yesterday.length > 0 && (
-                    <div className="space-y-1">
-                      <h3 className="text-xs font-semibold text-muted-foreground px-3 mb-2">Yesterday</h3>
-                      {yesterday.map((conv) => (
-                        <ConversationItem
-                          key={conv.id}
-                          conversation={conv}
-                          isActive={activeSessionId === conv.id}
-                          isEditing={editingId === conv.id}
-                          editTitle={editTitle}
-                          setEditTitle={setEditTitle}
-                          onStartEdit={handleStartEdit}
-                          onSaveEdit={handleSaveEdit}
-                          onCancelEdit={handleCancelEdit}
-                          onDelete={handleDeleteConversation}
-                          onClick={() => onSessionSelect?.(conv.id)}
-                        />
-                      ))}
-                    </div>
+                    <Collapsible open={yesterdayOpen} onOpenChange={setYesterdayOpen}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 hover:bg-sidebar-accent/50 rounded-lg group transition-colors">
+                        <h3 className="text-xs font-semibold text-sidebar-foreground/70 group-hover:text-sidebar-foreground">Yesterday</h3>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-sidebar-accent/50 text-sidebar-foreground/60">
+                            {yesterday.length}
+                          </Badge>
+                          <ChevronDown className={cn("h-4 w-4 text-sidebar-foreground/50 transition-transform", yesterdayOpen && "rotate-180")} />
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-1 mt-2">
+                        {yesterday.map((conv) => (
+                          <ConversationItem
+                            key={conv.id}
+                            conversation={conv}
+                            isActive={activeSessionId === conv.id}
+                            isEditing={editingId === conv.id}
+                            editTitle={editTitle}
+                            setEditTitle={setEditTitle}
+                            onStartEdit={handleStartEdit}
+                            onSaveEdit={handleSaveEdit}
+                            onCancelEdit={handleCancelEdit}
+                            onDelete={handleDeleteConversation}
+                            onClick={() => onSessionSelect?.(conv.id)}
+                          />
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
 
-                  {/* Previous 7 Days */}
+                  {/* This Week */}
+                  {thisWeek.length > 0 && (
+                    <Collapsible open={thisWeekOpen} onOpenChange={setThisWeekOpen}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 hover:bg-sidebar-accent/50 rounded-lg group transition-colors">
+                        <h3 className="text-xs font-semibold text-sidebar-foreground/70 group-hover:text-sidebar-foreground">This Week</h3>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-sidebar-accent/50 text-sidebar-foreground/60">
+                            {thisWeek.length}
+                          </Badge>
+                          <ChevronDown className={cn("h-4 w-4 text-sidebar-foreground/50 transition-transform", thisWeekOpen && "rotate-180")} />
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-1 mt-2">
+                        {thisWeek.map((conv) => (
+                          <ConversationItem
+                            key={conv.id}
+                            conversation={conv}
+                            isActive={activeSessionId === conv.id}
+                            isEditing={editingId === conv.id}
+                            editTitle={editTitle}
+                            setEditTitle={setEditTitle}
+                            onStartEdit={handleStartEdit}
+                            onSaveEdit={handleSaveEdit}
+                            onCancelEdit={handleCancelEdit}
+                            onDelete={handleDeleteConversation}
+                            onClick={() => onSessionSelect?.(conv.id)}
+                          />
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+
+                  {/* This Month */}
+                  {thisMonth.length > 0 && (
+                    <Collapsible open={olderOpen} onOpenChange={setOlderOpen}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 hover:bg-sidebar-accent/50 rounded-lg group transition-colors">
+                        <h3 className="text-xs font-semibold text-sidebar-foreground/70 group-hover:text-sidebar-foreground">This Month</h3>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-sidebar-accent/50 text-sidebar-foreground/60">
+                            {thisMonth.length}
+                          </Badge>
+                          <ChevronDown className={cn("h-4 w-4 text-sidebar-foreground/50 transition-transform", olderOpen && "rotate-180")} />
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-1 mt-2">
+                        {thisMonth.map((conv) => (
+                          <ConversationItem
+                            key={conv.id}
+                            conversation={conv}
+                            isActive={activeSessionId === conv.id}
+                            isEditing={editingId === conv.id}
+                            editTitle={editTitle}
+                            setEditTitle={setEditTitle}
+                            onStartEdit={handleStartEdit}
+                            onSaveEdit={handleSaveEdit}
+                            onCancelEdit={handleCancelEdit}
+                            onDelete={handleDeleteConversation}
+                            onClick={() => onSessionSelect?.(conv.id)}
+                          />
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+
+                  {/* Older - Collapsed by default */}
                   {older.length > 0 && (
-                    <div className="space-y-1">
-                      <h3 className="text-xs font-semibold text-muted-foreground px-3 mb-2">Previous 7 Days</h3>
-                      {older.map((conv) => (
-                        <ConversationItem
-                          key={conv.id}
-                          conversation={conv}
-                          isActive={activeSessionId === conv.id}
-                          isEditing={editingId === conv.id}
-                          editTitle={editTitle}
-                          setEditTitle={setEditTitle}
-                          onStartEdit={handleStartEdit}
-                          onSaveEdit={handleSaveEdit}
-                          onCancelEdit={handleCancelEdit}
-                          onDelete={handleDeleteConversation}
-                          onClick={() => onSessionSelect?.(conv.id)}
-                        />
-                      ))}
-                    </div>
+                    <Collapsible open={false} onOpenChange={() => {}}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 hover:bg-sidebar-accent/50 rounded-lg group transition-colors">
+                        <h3 className="text-xs font-semibold text-sidebar-foreground/70 group-hover:text-sidebar-foreground">Older</h3>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-sidebar-accent/50 text-sidebar-foreground/60">
+                            {older.length}
+                          </Badge>
+                          <ChevronRight className="h-4 w-4 text-sidebar-foreground/50" />
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-1 mt-2">
+                        {older.map((conv) => (
+                          <ConversationItem
+                            key={conv.id}
+                            conversation={conv}
+                            isActive={activeSessionId === conv.id}
+                            isEditing={editingId === conv.id}
+                            editTitle={editTitle}
+                            setEditTitle={setEditTitle}
+                            onStartEdit={handleStartEdit}
+                            onSaveEdit={handleSaveEdit}
+                            onCancelEdit={handleCancelEdit}
+                            onDelete={handleDeleteConversation}
+                            onClick={() => onSessionSelect?.(conv.id)}
+                          />
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
                 </div>
               )}
             </ScrollArea>
 
-            {/* Bottom Section with smooth transitions */}
-            <div className="border-t border-sidebar-border p-3 space-y-2 flex-shrink-0">
-              {/* Wallet Button - Only show if user is logged in */}
+            {/* Bottom Section */}
+            <div className="border-t border-sidebar-border p-3 space-y-1 flex-shrink-0">
+              {/* Professional Wallet Button */}
               {user && (
                 <Button
                   variant="ghost"
                   onClick={() => navigate('/wallet')}
-                  className="w-full justify-between gap-3 h-10 hover:bg-sidebar-accent text-sidebar-foreground transition-all duration-200 ease-out hover:pl-4"
+                  className="w-full justify-between gap-3 h-10 hover:bg-sidebar-accent text-sidebar-foreground transition-colors px-3"
                 >
                   <div className="flex items-center gap-3">
-                    <Wallet className="h-4 w-4 transition-transform duration-200 hover:scale-110" />
-                    <span className="text-sm">Wallet</span>
+                    <Wallet className="h-4 w-4" />
+                    <span className="text-sm font-medium">Wallet</span>
                   </div>
-                  <Badge variant="secondary" className="bg-primary/20 text-primary border-0 transition-all duration-200 hover:scale-105">
-                    {balance.toLocaleString()} sats
-                  </Badge>
+                  <div className="flex items-center gap-1.5 bg-sidebar-accent/50 px-2.5 py-1 rounded-md">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                    <span className="text-xs font-medium text-sidebar-foreground">
+                      {balance.toLocaleString()}
+                    </span>
+                    <span className="text-xs text-sidebar-foreground/60">sats</span>
+                  </div>
                 </Button>
               )}
 
               <Button
                 variant="ghost"
                 onClick={() => navigate('/settings')}
-                className="w-full justify-start gap-3 h-10 hover:bg-sidebar-accent text-sidebar-foreground transition-all duration-200 ease-out hover:pl-4"
+                className="w-full justify-start gap-3 h-10 hover:bg-sidebar-accent text-sidebar-foreground transition-colors px-3"
               >
-                <Settings className="h-4 w-4 transition-transform duration-200 hover:rotate-90" />
-                <span className="text-sm">Settings</span>
+                <Settings className="h-4 w-4" />
+                <span className="text-sm font-medium">Settings</span>
               </Button>
             </div>
           </div>
@@ -361,47 +522,94 @@ function ConversationItem({
           </Button>
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative group/conversation">
           <Button
             variant="ghost"
             onClick={onClick}
             className={cn(
-              "w-full justify-start h-auto py-2.5 px-3 hover:bg-sidebar-accent text-left group/item",
-              isActive && "bg-sidebar-accent"
+              "w-full justify-start h-auto py-2.5 px-3 text-left transition-colors rounded-lg hover:bg-sidebar-accent",
+              isActive && "bg-primary/10 border border-primary/20 text-primary-foreground"
             )}
           >
-            <div className="flex items-start gap-2 flex-1 min-w-0">
-              <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className={cn(
+                "flex items-center justify-center h-7 w-7 rounded-md flex-shrink-0 transition-colors",
+                isActive ? "bg-primary/20 text-primary" : "bg-sidebar-accent/50 text-sidebar-foreground/60"
+              )}>
+                <MessageSquare className="h-3.5 w-3.5" />
+              </div>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <p className={cn(
+                  "text-sm font-medium truncate transition-colors",
+                  isActive ? "text-primary" : "text-sidebar-foreground"
+                )}>
                   {conversation.title}
+                </p>
+                <p className="text-xs text-sidebar-foreground/60 mt-0.5">
+                  {new Date(conversation.timestamp).toLocaleDateString(undefined, { 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
                 </p>
               </div>
             </div>
           </Button>
           
-          {/* Action buttons - show on hover with clean gradient fade */}
-          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onStartEdit(conversation);
-              }}
-              className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-sidebar-accent transition-colors text-muted-foreground hover:text-foreground"
-              aria-label="Edit session"
-            >
-              <Edit2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(conversation.id, conversation.eventId);
-              }}
-              className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
-              aria-label="Delete session"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+          {/* Action Buttons */}
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/conversation:opacity-100 transition-opacity">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-md hover:bg-sidebar-accent transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStartEdit(conversation);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <Edit2 className="h-4 w-4" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Add to favorites
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-2">
+                  <Archive className="h-4 w-4" />
+                  Archive
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-2">
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Export
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(conversation.id, conversation.eventId);
+                  }}
+                  className="flex items-center gap-2 text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       )}
