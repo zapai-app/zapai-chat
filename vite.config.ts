@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
-  base: '/zapai-chat/',
+  base: '/zai/',
   server: {
     host: "::",
     port: 8080,

@@ -10,7 +10,7 @@ import NotFound from "./pages/NotFound";
 export function AppRouter() {
   return (
     <BrowserRouter 
-      basename="/zapai-chat"
+      basename="/zai"
       future={{
         v7_startTransition: true,
         v7_relativeSplatPath: true,
